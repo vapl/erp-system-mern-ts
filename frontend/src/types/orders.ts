@@ -1,0 +1,25 @@
+export interface Order {
+    _id: string,
+    reg_num: string,
+    order_name: string,
+    order_export: Boolean,
+    invoice_no: string,
+    invoice_total: number,
+    material_total: number,
+    components: {
+        frame_system: string,
+        frame_count: number,
+        frame_ral_color: string,
+        production_time: number,
+        mat_order_date: Date,
+        mat_delivery_week: number,
+        in_stock: Boolean,
+        order_tech_doc: [{
+            filename: String,
+            content: Buffer,
+        }],
+    },
+    user: string,
+    createdAt: string,
+    updatedAt: string,
+}
