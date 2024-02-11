@@ -40,6 +40,10 @@ const userSchema = new Schema({
         enum: ['user', 'admin', 'superadmin'],
         default: 'admin',
     },
+    profile_image: [{
+        filename: String,
+        content: Buffer,
+    }],
     orders: [{
         type: Schema.Types.ObjectId,
         ref: 'OrderReg',

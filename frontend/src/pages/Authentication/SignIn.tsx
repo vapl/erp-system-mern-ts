@@ -1,10 +1,53 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Breadcrumb from '../../components/Breadcrumbs/Breadcrumb';
 import DefaultLayout from '../../layout/DefaultLayout';
 
+interface FormData {
+  email: string,
+  password: string,
+}
+
 const SignIn: React.FC = () => {
+
+  const [formData, setFormData] = useState<FormData>({
+    email: '',
+    password: '',
+  });
   
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    try {
+      const response= await fetch('http://localhost:5000/api/users/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password
+        })
+      });
+
+      if (!response.ok) {
+        // Pārbauda vai atbilde ir veiksmīga, ja nē tad met kļūdu
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Something went wrong');
+      }
+
+      const responseData = await response.json();
+      console.log('Server response: ', responseData);
+    } catch (error) {
+      console.error('Error accured', error)
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
 
 
   return (
@@ -21,7 +64,7 @@ const SignIn: React.FC = () => {
                 Ielogoties
               </h2>
 
-              <form>
+              <form onSubmit={handleSubmit}>
                 <div className="mb-4">
                   <label className="mb-2.5 block font-medium text-black dark:text-white">
                     E-pasts
@@ -29,7 +72,8 @@ const SignIn: React.FC = () => {
                   <div className="relative">
                     <input
                       type="email"
-                      placeholder="Enter your email"
+                      onChange={handleChange}
+                      placeholder="Ievadiet savu e-pastu"
                       className="w-full rounded-lg border border-stroke bg-transparent py-4 pl-6 pr-10 text-black outline-none focus:border-primary focus-visible:shadow-none dark:border-form-strokedark dark:bg-form-input dark:text-white dark:focus:border-primary"
                     />
 
@@ -55,11 +99,12 @@ const SignIn: React.FC = () => {
 
                 <div className="mb-6">
                   <label className="mb-2.5 block font-medium text-black dark:text-white">
-                    Password
+                    Parole
                   </label>
                   <div className="relative">
                     <input
                       type="password"
+                      onChange={handleChange}
                       placeholder="6+ Characters, 1 Capital letter"
                       className="w-full rounded-lg border border-stroke bg-transparent py-4 pl-6 pr-10 text-black outline-none focus:border-primary focus-visible:shadow-none dark:border-form-strokedark dark:bg-form-input dark:text-white dark:focus:border-primary"
                     />
@@ -98,9 +143,9 @@ const SignIn: React.FC = () => {
 
                 <div className="mt-6 text-center">
                   <p>
-                    Don’t have any account?{' '}
+                    Ja vēl nav konta{' '}
                     <Link to="/auth/signup" className="text-primary">
-                      Sign Up
+                      Reģistrācija
                     </Link>
                   </p>
                 </div>
