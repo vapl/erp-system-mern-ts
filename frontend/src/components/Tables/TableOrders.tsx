@@ -8,7 +8,6 @@ import {
   TEModalContent,
   TEModalHeader,
   TEModalBody,
-  TEModalFooter,
 } from "tw-elements-react";
 import { User } from "../../types/users";
 import moment from 'moment';
@@ -98,7 +97,7 @@ const TableOrders = () => {
   const [regNum, setRegNum] = useState('');
   const [orderName, setOrderName] = useState('');
   const [exportBoo, setExportBoo] = useState(false);
-  const [orderTechDoc, setOrderTechDoc] = useState<{filename: string; content: Blob;} | null>(null)
+  const [orderTechDoc, setOrderTechDoc] = useState<File | null>(null)
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -110,7 +109,7 @@ const TableOrders = () => {
       formData.append('order_export', exportBoo.toString());
 
       if (orderTechDoc) {
-        formData.append('order_tech_doc', orderTechDoc.content);
+        formData.append('order_tech_doc', orderTechDoc);
       }
 
       const response = await fetch('http://localhost:5000/api/newOrder', {
@@ -125,17 +124,13 @@ const TableOrders = () => {
 
     } catch (error) {
       console.error('Error: ', error)
-    }
+    }    
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.currentTarget.files?.[0];
     if (file) {
-      const newOrderTechDoc = {
-        filename: file.name,
-        content: file,
-      };
-    setOrderTechDoc(newOrderTechDoc);
+      setOrderTechDoc(file);
     }
   };
   {/* / Create New order */}
@@ -529,38 +524,25 @@ const TableOrders = () => {
                           </div>
                         </div>
                       </div>
-                      <div className="mt-6 flex items-center justify-end gap-x-6">
-                        <button type="button" className="text-sm font-semibold leading-6 text-gray-900">
-                          Cancel
-                        </button>
-                        <button
-                          type="submit"
-                          className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-                        >
-                          Save
-                        </button>
-                      </div>
-                    </form>
-                  </TEModalBody>
-                  <TEModalFooter>
-                    <TERipple rippleColor="light">
+                      <TERipple rippleColor="light">
                       <button
                         type="button"
                         className="inline-block rounded bg-primary-100 px-6 pb-2 pt-2.5 text-xs font-medium uppercase leading-normal text-primary-700 transition duration-150 ease-in-out hover:bg-primary-accent-100 focus:bg-primary-accent-100 focus:outline-none focus:ring-0 active:bg-primary-accent-200"
                         onClick={() => setShowVerticalyCenteredModal(false)}
                       >
-                        Close
+                        Atcelt
                       </button>
                     </TERipple>
                     <TERipple rippleColor="light">
                       <button
-                        type="button"
+                        type="submit"
                         className="ml-1 inline-block rounded bg-primary px-6 pb-2 pt-2.5 text-xs font-medium uppercase leading-normal text-white shadow-[0_4px_9px_-4px_#3b71ca] transition duration-150 ease-in-out hover:bg-primary-600 hover:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] focus:bg-primary-600 focus:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] focus:outline-none focus:ring-0 active:bg-primary-700 active:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] dark:shadow-[0_4px_9px_-4px_rgba(59,113,202,0.5)] dark:hover:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)] dark:focus:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)] dark:active:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)]"
                       >
-                        Save changes
+                        Saglabāt
                       </button>
                     </TERipple>
-                  </TEModalFooter>
+                    </form>
+                  </TEModalBody>
                 </TEModalContent>
               </TEModalDialog>
             </TEModal>

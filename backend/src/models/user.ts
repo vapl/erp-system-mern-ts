@@ -2,7 +2,6 @@ import { InferSchemaType, Schema, model } from "mongoose";
 
 // Lietotāja shēma
 const userSchema = new Schema({
-    _id: String,
     name: {
         type: String,
         required: true,
@@ -11,7 +10,7 @@ const userSchema = new Schema({
     },
     surname: {
         type: String,
-        required: true,
+        required: false,
         min: 2,
         max: 100,
     },
@@ -21,7 +20,8 @@ const userSchema = new Schema({
             validator: (value: string) => /\S+@\S+\.\S+/.test(value),
             message: 'Invalid email format',
         },
-        select: false,
+        require: true,
+        select: true,
         unique: true,
     },
     password: {
@@ -35,6 +35,7 @@ const userSchema = new Schema({
     phone_number: String,
     occupation: String,
     role: {
+        require: true,
         type: String,
         enum: ['user', 'admin', 'superadmin'],
         default: 'admin',

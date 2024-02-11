@@ -148,7 +148,10 @@ function App() {
           element={
             <>
               <PageTitle title="Signup | TailAdmin - Tailwind CSS Admin Dashboard Template" />
-              <SignUp />
+              <SignUp 
+                onDismiss={() => {  }}
+                onSignUpSuccessfull={() => {  }}
+              />
             </>
           }
         />
