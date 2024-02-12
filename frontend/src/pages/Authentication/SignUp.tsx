@@ -88,7 +88,7 @@ const SignUp: React.FC = () => {
         if (value) {
           checkEmailExistence(value).then(isEmailRegistered => {
             fieldWarning('email', value === '' ? 'border-red-500' : null)
-            setEmailWarning(isEmailRegistered ? 'Šāds epasts jau reģistrēts, izēlieties citu' : '');
+            setEmailWarning(isEmailRegistered ? 'Šāds epasts jau reģistrēts, izvēlieties citu' : '');
           }).catch(error => {
             console.error('Error checking email existence:', error);
           });
@@ -194,7 +194,7 @@ const SignUp: React.FC = () => {
 
       const passwordRegex = /^(?=.*[A-Z])(?=.*[!@#$%^&*])(?=.{6,})/;
       const isValidPassword = passwordRegex.test(formData.password);
-      setCheckPasswordField(!isValidPassword ? 'Jābūt vismaz 6 simboliem, vismaz vienam lielajam burtam un vismz vienam simbolam' : null);
+      setCheckPasswordField(!isValidPassword ? 'Jābūt 6+ Burtiem - vismaz 1 Lielajam burtam, 1 Ciparam, 1 Simbolam' : null);
       
       setCheckRoleField(formData.role === '' ? 'Lietotāja loma ir obligāta' : null);
       return;
@@ -436,7 +436,7 @@ const SignUp: React.FC = () => {
                     <input
                       {...register('password')}
                       type="password"
-                      placeholder="Ievadiet paroli"
+                      placeholder="6+ Burti - vismaz 1 Lielais burts, 1 Cipars, 1 Simbols"
                       onChange={handleInputChange}
                       className={`w-full rounded-lg border border-stroke ${fieldWarnings.password} bg-transparent py-4 pl-6 pr-10 text-black outline-none focus:border-primary focus-visible:shadow-none dark:border-form-strokedark dark:bg-form-input dark:text-white dark:focus:border-primary`}
                     />
