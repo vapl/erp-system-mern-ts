@@ -34,7 +34,16 @@ function App() {
     <Loader />
   ) : (
     <>
-      <Routes>        
+      <Routes>
+        <Route
+            path="/auth/signin"
+            element={
+              <>
+                <PageTitle title="Signin | Aldens ERP" />
+                <SignIn />
+              </>
+            }
+        />
         <Route
           index
           element={
@@ -133,21 +142,12 @@ function App() {
               <Buttons />
             </>
           }
-        />
-        <Route
-          path="/auth/signin"
-          element={
-            <>
-              <PageTitle title="Signin | TailAdmin - Tailwind CSS Admin Dashboard Template" />
-              <SignIn />
-            </>
-          }
-        />
+        />        
         <Route
           path="/auth/signup"
           element={
             <>
-              <PageTitle title="Signup | TailAdmin - Tailwind CSS Admin Dashboard Template" />
+              <PageTitle title="Signup | Aldens ERP" />
               <SignUp 
                 onDismiss={() => {  }}
                 onSignUpSuccessfull={() => {  }}

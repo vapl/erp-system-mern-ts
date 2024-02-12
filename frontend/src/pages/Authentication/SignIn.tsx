@@ -1,20 +1,37 @@
-import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import Breadcrumb from '../../components/Breadcrumbs/Breadcrumb';
-import DefaultLayout from '../../layout/DefaultLayout';
+import React, { useState } from 'react';
+import SignInLayout from '../../layout/SignInLayout';
 import { SubmitHandler, useForm } from 'react-hook-form';
 
 interface FormData {
   email: string,
   password: string,
+  submit: string,
 }
 
 const SignIn: React.FC = () => {
 
-  const { handleSubmit, reset, setError, register } = useForm<FormData>();
+  const { handleSubmit, reset, formState: { errors }, setError, register } = useForm<FormData>();
+  const [messageColor, setMessageColor] = useState<string>();
   
   const onSubmit: SubmitHandler<FormData> = async (formData) => { 
     try {
+      
+      if (!formData.email) {
+        setError('email', {
+          type: 'require', 
+          message: 'E-pasta adrese ir obligāta'
+        });
+        return;
+      };
+
+      if (!formData.password) {
+        setError('password', {
+          type: 'required',
+          message: 'Parole ir obligāta!'
+        });
+        return;
+      };
+
       const response= await fetch('http://localhost:5000/api/users/login', {
         method: 'POST',
         headers: {
@@ -26,43 +43,56 @@ const SignIn: React.FC = () => {
         })
       });
 
-      console.log(`Email: ${formData.email}, password: ${formData.password}`);
-
       if (!response.ok) {
         // Pārbauda vai atbilde ir veiksmīga, ja nē tad met kļūdu
         const errorData = await response.json();
         reset({
           email: '',
-          password: ''
+          password: '',
         });
-        setError('email', {
+        setMessageColor('red');
+        setError('submit', {
           type: 'manual',
           message: 'Notika kļūda'
         });
+        
         throw new Error(errorData.message || 'Something went wrong');
       }
 
+      const timeoutId = setTimeout(() => {
+        setMessageColor('green');
+        setError('submit', {
+          type: 'manual',
+          message: 'Ielogošanās veiksmīga',
+        });
+      }, 5000); // Pēc 5 sekundēm uzraksts pazudīs
+      return () => clearTimeout(timeoutId);
 
-      const responseData = await response.json();
-      console.log('Server response: ', responseData);
     } catch (error) {
-      setError('email', {
+      setMessageColor('red');
+      setError('submit', {
         type: 'manual',
-        message: 'Notika kļūda'
+        message: 'e-pasts vai parole ir nepareizi'
       });
+
       console.error('Error accured', error)
+      const timeoutId = setTimeout(() => {
+        setMessageColor('green');
+        reset({
+          email: '',
+          password: '',
+        });
+      }, 3000); // Pēc 3 sekundēm uzraksts pazudīs
+      return () => clearTimeout(timeoutId);
     }
   };
 
 
   return (
-    <DefaultLayout>
-      <Breadcrumb pageName="Ielogoties" />
+    <SignInLayout>
 
       <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
         <div className="flex items-center justify-center">
-          
-
           <div className="w-full border-stroke xl:w-1/2">
             <div className="w-full p-4 sm:p-12.5 xl:p-17.5">
               <h2 className="mb-9 text-2xl font-bold text-black dark:text-white sm:text-title-xl2">
@@ -99,6 +129,7 @@ const SignIn: React.FC = () => {
                         </g>
                       </svg>
                     </span>
+                    {errors.email && <span className='text-red-500 italic'>{errors.email.message}</span>}
                   </div>
                 </div>
 
@@ -110,7 +141,7 @@ const SignIn: React.FC = () => {
                     <input
                       {...register('password')}
                       type="password"
-                      placeholder="6+ Characters, 1 Capital letter"
+                      placeholder="Ievadiet paroli"
                       className="w-full rounded-lg border border-stroke bg-transparent py-4 pl-6 pr-10 text-black outline-none focus:border-primary focus-visible:shadow-none dark:border-form-strokedark dark:bg-form-input dark:text-white dark:focus:border-primary"
                     />
 
@@ -135,31 +166,29 @@ const SignIn: React.FC = () => {
                         </g>
                       </svg>
                     </span>
+                    {errors.password && <span className='text-red-500 italic'>{errors.password.message}</span>}
                   </div>
                 </div>
 
                 <div className="mb-5">
+                {errors.submit &&
+                  <div className='flex items-center justify-center mt-6 mb-6 bold'>
+                     <span className={`text-${messageColor}-500 italic centered`}>{errors.submit.message}</span>
+                  </div>
+                }
                   <input
+                    {...register('submit')}
                     type="submit"
-                    value="Sign In"
+                    value="Ielogoties"
                     className="w-full cursor-pointer rounded-lg border border-primary bg-primary p-4 text-white transition hover:bg-opacity-90"
                   />
-                </div>
-
-                <div className="mt-6 text-center">
-                  <p>
-                    Ja vēl nav konta{' '}
-                    <Link to="/auth/signup" className="text-primary">
-                      Reģistrācija
-                    </Link>
-                  </p>
                 </div>
               </form>
             </div>
           </div>
         </div>
       </div>
-    </DefaultLayout>
+    </SignInLayout>
   );
 };
 
