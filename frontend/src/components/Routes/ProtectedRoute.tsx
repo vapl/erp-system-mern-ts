@@ -1,5 +1,5 @@
 import React from 'react';
-import { Route, Redirect, RouteProps } from 'react-router-dom';
+import { Route, redirect } from 'react-router-dom';
 import { useAuth } from './AuthContext';
 
 interface ProtectedRouteProps {
@@ -12,8 +12,8 @@ const ProtectedRoute = ({component: Component, ...rest }: ProtectedRouteProps) =
     return (
         <Route
             {...rest}
-            render={(props: RouteProps<any>) => {
-                return currentUser ? <Component {...props} /> : <Redirect to='/auth/signin'
+            component={(props: any) => {
+                currentUser ? <Component {...props} /> : redirect('/auth/signin')
             }}
          />
     )
