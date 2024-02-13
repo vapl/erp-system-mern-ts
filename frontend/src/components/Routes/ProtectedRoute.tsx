@@ -1,20 +1,22 @@
 import React from 'react';
-import { Route, redirect } from 'react-router-dom';
+import { Route, Redirect } from 'react-router-dom';
 import { useAuth } from './AuthContext';
 
 interface ProtectedRouteProps {
     component: React.ComponentType<any>;
 }
 
-const ProtectedRoute = ({component: Component, ...rest }: ProtectedRouteProps) => {
-    const { currentUser } = useAuth();
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({component: Component, ...rest }) => {
+    const [ currentUser ] = useAuth();
 
     return (
         <Route
             {...rest}
-            component={(props: any) => {
+            render={(props: any) => {
                 currentUser ? <Component {...props} /> : redirect('/auth/signin')
             }}
          />
     )
-}
+};
+
+export default ProtectedRoute;
