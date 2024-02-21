@@ -112,7 +112,7 @@ const TableOrders = () => {
         formData.append('order_tech_doc', orderTechDoc);
       }
 
-      const response = await fetch('http://localhost:5000/api/newOrder', {
+      const response = await fetch('http://localhost:5000/api/orders/newOrder', {
         method: 'POST',
         body: formData,
       });

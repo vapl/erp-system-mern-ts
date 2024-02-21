@@ -12,7 +12,10 @@ import cors from 'cors';
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+    origin: 'http://localhost:5173',
+    credentials: true,
+}));
 
 app.use(morgan('dev'));
 
@@ -24,6 +27,9 @@ app.use(session({
     saveUninitialized: false,
     cookie: {
         maxAge: 60 * 60 * 1000,
+        httpOnly: false,
+        // secure: false,
+        // sameSite: 'none',
     },
     rolling: true,
     store: MongoStore.create({
@@ -32,7 +38,7 @@ app.use(session({
     })
 }));
 
-app.use('/api/', userRoutes);
+app.use('/api/me', userRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/notes', notesRoutes);
 app.use('/api/orders', orderRegRoutes);

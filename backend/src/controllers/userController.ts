@@ -15,7 +15,7 @@ export const getUsers:RequestHandler = async (req, res, next) => {
 
 export const getAuthenticatedUser: RequestHandler = async (req, res, next) => {
     const authenticatedUserId = req.session.userId;
-
+    console.log(authenticatedUserId);
     try {
         if (!authenticatedUserId) {
             throw createHttpError(401, 'User Not authenticated');
@@ -24,13 +24,13 @@ export const getAuthenticatedUser: RequestHandler = async (req, res, next) => {
         const user = await UserModel
             .findById(authenticatedUserId)
             .select("+email")
-            .populate('orders glass_reg')
             .exec();
         res.status(200).json(user);
+        console.log(user);
     } catch (error) {
         next(error);
     }
-}
+};
 
 interface SignUpBody {
     name: string,
@@ -77,10 +77,8 @@ export const signUp: RequestHandler<unknown, unknown, SignUpBody, unknown> = asy
             glass_reg: []
 
         });
-
-        if (newUser._id) {
-            req.session.userId = new mongoose.Types.ObjectId(newUser._id);
-        }
+        
+        req.session.userId = new mongoose.Types.ObjectId(newUser._id);
 
         res.status(201).json(newUser);
     } catch (error) {
@@ -102,7 +100,7 @@ export const login: RequestHandler<unknown, unknown, LoginBody, unknown> = async
             throw createHttpError(400, 'Parameters missing');
         }
 
-        const user = await UserModel.findOne({email: email}).select('+password').exec();
+        const user = await UserModel.findOne({email: email}).select('+password +email').exec();
 
         if(!user) {
             throw createHttpError(401, 'Invalid credentials');
@@ -114,9 +112,7 @@ export const login: RequestHandler<unknown, unknown, LoginBody, unknown> = async
             throw createHttpError(401, 'Invalid credentials');
         }
 
-        if (user._id) {
-            req.session.userId = new mongoose.Types.ObjectId(user._id);
-        }
+        req.session.userId = user._id;
 
         res.status(200).json(user);
     } catch (error) {
