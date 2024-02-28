@@ -1,25 +1,33 @@
-import { FieldError, RegisterOptions } from "react-hook-form";
+import { FieldError, RegisterOptions, UseFormRegister } from "react-hook-form";
 
 interface SubmitButtonProps {
+    name: string,
     value: string,
     disabled?: boolean,
+    type: string,
+    register: UseFormRegister<any>
     registerOptions?: RegisterOptions,
     error?: FieldError,
+    errorSubmit?: boolean,
+    errorMessage?: string,
     [x: string]: any,
 }
 
-const SubmitButton = ({value, disabled = false, error, onClick, ...props}: SubmitButtonProps) => {
+const SubmitButton = ({name, value, disabled = false, registerOptions, type, error, register, errorSubmit, errorMessage, ...props}: SubmitButtonProps) => {
 
 
     return (
         <div className="mb-5">
-            {error && <span className={`${error ? 'text-red-500 italic' : 'text-green-500 italic'}`}>
-                {error?.message}
-            </span>}
+            <div className=" text-center my-3">
+                {errorSubmit && <span className={`${errorSubmit ? 'text-red-500 italic' : 'text-green-500 italic'}`}>
+                    {errorMessage || error?.message}
+                </span>}
+            </div>
             <input
-                type="submit"
+                type={type}
                 value={value}
-                className={'w-full rounded-lg border border-primary bg-primary p-4 text-white transition hover:bg-opacity-90'}
+                className={'cursor-pointer w-full rounded-lg border border-primary bg-primary p-4 text-white transition hover:bg-opacity-90'}
+                {...register(name, registerOptions)}
                 {...props}
             />
         </div>

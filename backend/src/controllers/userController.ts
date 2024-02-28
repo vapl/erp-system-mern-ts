@@ -2,7 +2,7 @@ import { RequestHandler } from "express";
 import UserModel from '../models/user';
 import createHttpError from "http-errors";
 import bcrypt from 'bcrypt';
-import mongoose, { ObjectId } from "mongoose";
+import { ObjectId } from "mongoose";
 
 export const getUsers:RequestHandler = async (req, res, next) => {
     try {
@@ -14,19 +14,12 @@ export const getUsers:RequestHandler = async (req, res, next) => {
 };
 
 export const getAuthenticatedUser: RequestHandler = async (req, res, next) => {
-    const authenticatedUserId = req.session.userId;
-    console.log(authenticatedUserId);
     try {
-        if (!authenticatedUserId) {
-            throw createHttpError(401, 'User Not authenticated');
-        }
-
         const user = await UserModel
-            .findById(authenticatedUserId)
-            .select("+email")
+            .findById(req.session.userId)
+            .select('+email')
             .exec();
         res.status(200).json(user);
-        console.log(user);
     } catch (error) {
         next(error);
     }
@@ -41,7 +34,7 @@ interface SignUpBody {
     occupation?: string,
     role: string,
     orders?: ObjectId[],
-    glass_reg?: ObjectId[]
+    glass_reg?: ObjectId[],
 }
 
 export const signUp: RequestHandler<unknown, unknown, SignUpBody, unknown> = async (req, res, next) => {
@@ -78,7 +71,7 @@ export const signUp: RequestHandler<unknown, unknown, SignUpBody, unknown> = asy
 
         });
         
-        req.session.userId = new mongoose.Types.ObjectId(newUser._id);
+        req.session.userId = newUser._id;
 
         res.status(201).json(newUser);
     } catch (error) {
@@ -87,8 +80,8 @@ export const signUp: RequestHandler<unknown, unknown, SignUpBody, unknown> = asy
 };
 
 interface LoginBody {
-    email: string,
-    password: string,
+    email?: string,
+    password?: string,
 }
 
 export const login: RequestHandler<unknown, unknown, LoginBody, unknown> = async (req, res, next) => {
@@ -125,8 +118,10 @@ export const logout: RequestHandler = (req, res, next) => {
         if (error) {
             next(error);
         } else {
+            res.setHeader('Cache-Control', 'no-store');
+            res.clearCookie('connect.sid');
             res.sendStatus(200);
         }
 
     })
-}
+};

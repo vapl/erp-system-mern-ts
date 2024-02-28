@@ -1,26 +1,26 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Route, Routes, useLocation } from 'react-router-dom';
 
 import Loader from './common/Loader';
-import PageTitle from './components/PageTitle';
+import ProtectedRoute from './components/Routes/ProtectedRoute';
 import SignIn from './pages/Authentication/SignIn';
 import SignUp from './pages/Authentication/SignUp';
 import Calendar from './pages/Calendar';
-import Chart from './pages/Chart';
 import ECommerce from './pages/Dashboard/ECommerce';
+import Orders from './pages/Orders';
+import Profile from './pages/Profile';
 import FormElements from './pages/Form/FormElements';
 import FormLayout from './pages/Form/FormLayout';
-import Profile from './pages/Profile';
-import Settings from './pages/Settings';
 import Tables from './pages/Tables';
-import Alerts from './pages/UiElements/Alerts';
+import Settings from './pages/Settings';
+import Chart from './pages/Chart';
 import Buttons from './pages/UiElements/Buttons';
-import Orders from './pages/Orders';
-import ProtectedRoute from './components/Routes/ProtectedRoute';
 
-function App() {
+
+const App: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const { pathname } = useLocation();
+  
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -30,129 +30,69 @@ function App() {
     setTimeout(() => setLoading(false), 1000);
   }, []);
 
-
   return loading ? (
     <Loader />
   ) : (
-    <> 
-        <Routes>
-          <Route path="/auth/signin" element={
-                <>
-                  <PageTitle title="Signin | Aldens ERP" />
-                  <SignIn />
-                  
-                </>
-              }
-          />
-          <Route path='/' element={
-              <>
-                <PageTitle title="ALDENS ERP System" />
-                <ProtectedRoute path='/' element={<ECommerce />}/>
-              </>
-            }
-          />
-          <Route path="/orders" element={
-              <>
-                <PageTitle title="Orders" />
-                <ProtectedRoute path='/orders' element={<Orders />}/>
-              </>
-            }
-          />
-          <Route
-            path="/calendar"
-            element={
-              <>
-                <PageTitle title="Calendar" />
-                <ProtectedRoute path='/calendar' element={<Calendar />}/>
-              </>
-            }
-          />
-          <Route
-            path="/profile"
-            element={
-              <>
-                <PageTitle title="Profile" />
-                <ProtectedRoute path='/profile' element={<Profile />}/>
-              </>
-            }
-          />
-          <Route
-            path="/forms/form-elements"
-            element={
-              <>
-                <PageTitle title="Form Elements | TailAdmin - Tailwind CSS Admin Dashboard Template" />
-                <FormElements />
-              </>
-            }
-          />
-          <Route
-            path="/forms/form-layout"
-            element={
-              <>
-                <PageTitle title="Form Layout | TailAdmin - Tailwind CSS Admin Dashboard Template" />
-                <FormLayout />
-              </>
-            }
-          />
-          <Route
-            path="/tables"
-            element={
-              <>
-                <PageTitle title="Tables | TailAdmin - Tailwind CSS Admin Dashboard Template" />
-                <Tables />
-              </>
-            }
-          />
-          <Route
-            path="/settings"
-            element={
-              <>
-                <PageTitle title="Settings | TailAdmin - Tailwind CSS Admin Dashboard Template" />
-                <Settings />
-              </>
-            }
-          />
-          <Route
-            path="/chart"
-            element={
-              <>
-                <PageTitle title="Basic Chart | TailAdmin - Tailwind CSS Admin Dashboard Template" />
-                <Chart />
-              </>
-            }
-          />
-          <Route
-            path="/ui/alerts"
-            element={
-              <>
-                <PageTitle title="Alerts | TailAdmin - Tailwind CSS Admin Dashboard Template" />
-                <Alerts />
-              </>
-            }
-          />
-          <Route
-            path="/ui/buttons"
-            element={
-              <>
-                <PageTitle title="Buttons | TailAdmin - Tailwind CSS Admin Dashboard Template" />
-                <Buttons />
-              </>
-            }
-          />        
-          <Route
-            path="/auth/signup"
-            element={
-              <>
-                <PageTitle title="Ielogoties" />
-                <SignUp 
-                  onDismiss={() => {  }}
-                  onSignUpSuccessfull={() => {  }}
-                />
-              </>
-            }
-          />
-        </Routes>
-    </>
+      <Routes>
+        <Route path="/auth/signin" element={ <SignIn /> } />
+        <Route 
+          path="/auth/signup" 
+          element={<ProtectedRoute 
+            element={<SignUp onSignUpSuccessfull={() => {  }} />} 
+            accessRole={['superadmin', 'admin']} />} 
+        />
+        <Route 
+          path="/" 
+          element={ <ProtectedRoute 
+            element={<ECommerce />}
+            accessRole={['superadmin', 'admin', 'user']}/>} 
+        />
+        <Route 
+          path="/orders" 
+          element={<ProtectedRoute 
+            element={ <Orders />} 
+            accessRole={['superadmin', 'admin', 'user']}/>} />
+        <Route 
+          path="/calendar" 
+          element={<ProtectedRoute 
+            element={ <Calendar />} 
+            accessRole={['superadmin', 'admin', 'user']}/>} />
+        <Route 
+          path="/profile" 
+          element={<ProtectedRoute 
+            element={ <Profile />} 
+            accessRole={['superadmin', 'admin', 'user']}/>} />
+        <Route 
+          path="/forms/form-elements" 
+          element={<ProtectedRoute 
+            element={ <FormElements />} 
+            accessRole={['superadmin', 'admin', 'user']}/>} />
+        <Route 
+          path="/forms/form-layouts" 
+          element={<ProtectedRoute 
+            element={ <FormLayout />} 
+            accessRole={['superadmin', 'admin', 'user']}/>} />
+        <Route 
+          path="/tables" 
+          element={<ProtectedRoute 
+            element={ <Tables />} 
+            accessRole={['superadmin', 'admin', 'user']}/>} />
+        <Route 
+          path="/settings" 
+          element={<ProtectedRoute 
+            element={ <Settings />} 
+            accessRole={['superadmin', 'admin', 'user']}/>} />
+        <Route 
+          path="/chart" 
+          element={<ProtectedRoute 
+            element={ <Chart />} 
+            accessRole={['superadmin', 'admin', 'user']}/>} />
+        <Route 
+          path="/ui/buttons" 
+          element={<ProtectedRoute 
+            element={ <Buttons />} 
+            accessRole={['superadmin', 'admin', 'user']}/>} />                
+      </Routes>
   );
 }
 

@@ -1,40 +1,52 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import React, { createContext, useState, useEffect, ReactNode } from 'react';
+import * as OrdersApi from '../../network/orders_api';
+import { User } from '../../models/user';
 
-const AuthContext = createContext<string>('');
-
-
-export const AuthProvider = ({ children }: { children: ReactNode}) => {
-    const [currentUser, setCurrentUser] = useState<string>('');
-    
-    const fetchCurrentUser = async () => {
-        console.log(currentUser);
-
-        try {
-            const response = await fetch('http://localhost:5000/api/users/currentUser', {
-                method: 'GET',
-                credentials: 'include',
-                headers: {'ContentType': 'application/json'}                
-            });
-            if (!response.ok) {
-                throw new Error('Failed to fetch user');
-            }
-            const user = await response.json();
-            setCurrentUser(user.userId);
-            
-        } catch (error) {
-            console.error('Error fetching authenticated user', error)
-        }
-    };    
-
-    useEffect(() => {
-        fetchCurrentUser();
-    }, []);
-
-    return (
-        <AuthContext.Provider value={ currentUser }>
-            {children}
-        </AuthContext.Provider>
-    )
+type AuthContextType = {
+    isAuthenticated: boolean,
+    user: User | null,
+    login: () => void,
+    logout: () => void,
 };
 
-export const useAuth = () => useContext(AuthContext);
+const AuthContext = createContext<AuthContextType>({
+    isAuthenticated: false,
+    user: null,
+    login: () => {},
+    logout: () => {},
+})
+
+export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
+    const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+    const [user, setUser] = useState<User | null>(null);    
+
+    useEffect(() => {
+        const checkAuth = async () => {
+            try {
+                const loggedInUser = await OrdersApi.getLoggedInUser();
+                setUser(loggedInUser);
+                setIsAuthenticated(true);
+            } catch (error) {
+                console.error(error);
+            }
+        };
+        checkAuth();
+    }, []);
+
+    const login = () => {
+        setIsAuthenticated(true);
+    };
+
+    const logout = () => {
+        OrdersApi.logout();
+        setIsAuthenticated(false);
+    };
+
+    return (
+        <AuthContext.Provider value={{ isAuthenticated, user, login, logout }}>
+            {children}
+        </AuthContext.Provider>
+    );
+};
+
+export default AuthContext;

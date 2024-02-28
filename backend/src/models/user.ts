@@ -21,7 +21,7 @@ const userSchema = new Schema({
             message: 'Invalid email format',
         },
         require: true,
-        select: true,
+        select: false,
         unique: true,
     },
     password: {
@@ -30,7 +30,6 @@ const userSchema = new Schema({
         min: 6,
         max: 12,
         select: false,
-        unique: true,
     },
     phone_number: String,
     occupation: String,

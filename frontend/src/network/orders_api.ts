@@ -1,8 +1,7 @@
-import { User } from "../types/users";
+import { User } from "../models/user";
 const baseURL = 'http://localhost:5000';
 
 async function fetchData(input: RequestInfo, init?: RequestInit) {
-
     const response = await fetch(input, init);    
     if (response.ok) {
         return response;
@@ -13,15 +12,9 @@ async function fetchData(input: RequestInfo, init?: RequestInit) {
     }
 };
 
-export async function getLoggedInUser(): Promise<string> {
-    const response = await fetchData(`${baseURL}/api/users/me`, {
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-    });
-    const user = await response.json();;
-    return user._id;
+export async function getLoggedInUser(): Promise<User> {
+    const response = await fetchData(`${baseURL}/api/users/`, { method: 'GET', credentials: 'include' });
+    return response.json();
 };
 
 export interface SignUpCredentials {
@@ -33,6 +26,7 @@ export interface SignUpCredentials {
     phone_number: string,
     occupation: string,
     role: string,
+    submit: string,
 };
 
 export async function getUsersEmail(): Promise<User[]> {
@@ -54,21 +48,22 @@ export async function signUp(credentials: SignUpCredentials): Promise<User> {
 export interface LoginCredentials {
     email: string,
     password: string,
+    submit: string
 };
 
-export async function signIn(credentials: LoginCredentials): Promise<User> {
-    
+export async function signIn(credentials: LoginCredentials): Promise<User> {    
     const response = await fetchData(`${baseURL}/api/users/login`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify(credentials),
+        credentials: 'include',
     });
     return response.json();
 };
 
 export async function logout() {
-    await fetchData(`${baseURL}/api/users/logout`, {method: 'POST'});
-}
+    await fetchData(`${baseURL}/api/users/logout`, {method: 'POST', credentials: 'include',});
+};
 

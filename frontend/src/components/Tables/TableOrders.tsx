@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Order } from "../../types/orders";
+import { Order } from "../../models/orders";
 import { 
   TECollapse,
   TERipple,
@@ -9,7 +9,7 @@ import {
   TEModalHeader,
   TEModalBody,
 } from "tw-elements-react";
-import { User } from "../../types/users";
+import { User } from "../../models/user";
 import moment from 'moment';
 import { DocumentArrowDownIcon } from '@heroicons/react/24/solid'
 
@@ -45,8 +45,7 @@ const TableOrders = () => {
   useEffect(() => {
     const loadUsers = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/users', {method: 'GET'});
-        console.debug('Response', response);
+        const response = await fetch('http://localhost:5000/api/users/allUsers', {method: 'GET'});
         const users = await response.json();
         setUsers(users);
       } catch (error) {
@@ -62,7 +61,6 @@ const TableOrders = () => {
     const user = users.find(user => user._id === userId);
     return user ? `${user.name} ${user.surname}` : 'Unknown';
   }
-
 
   const fileDownload = async (fileName: string, docId: string) => {
     try {

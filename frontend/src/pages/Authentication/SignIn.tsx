@@ -1,72 +1,43 @@
-import React, { useState } from 'react';
-import SignInLayout from '../../layout/SignInLayout';
-import { SubmitHandler, useForm } from 'react-hook-form';
-import { signIn } from '../../network/orders_api';
-import TextInputField from '../../components/Forms/TextInputField';
 import { EnvelopeIcon, LockClosedIcon } from '@heroicons/react/24/solid';
+import { useContext, useState } from 'react';
+import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
+import SubmitButton from '../../components/Forms/SubmitButton';
+import TextInputField from '../../components/Forms/TextInputField';
+import PageTitle from '../../components/PageTitle';
+import AuthContext from '../../components/Routes/AuthContext';
+import SignInLayout from '../../layout/SignInLayout';
+import { LoginCredentials, signIn } from '../../network/orders_api';
 
-
-interface FormData {
-  email: string,
-  password: string,
-  submit: string,
-}
-
-const SignIn: React.FC = () => {
+const SignIn = () => {
+  const { login } = useContext(AuthContext);
+  const { handleSubmit, formState: { errors, isSubmitting }, register } = useForm<LoginCredentials>();
+  const [isError, setIsError] = useState<boolean>(false);
   const navigate = useNavigate();
-  const { handleSubmit, reset, formState: { errors }, setError, register } = useForm<FormData>();
-  const [messageColor, setMessageColor] = useState<string>();
-  
-  const onSubmit: SubmitHandler<FormData> = async (formData) => { 
+
+  register('password', {
+    onChange: () => setIsError(false)
+  });
+
+  register('email', {
+    onChange: () => setIsError(false)
+  });
+
+  async function onSubmit(credentials: LoginCredentials) { 
     try {
-      
-      if (!formData.email || !formData.password) {
-        return;
-      };
-
-      const user = await signIn(formData);
-
-      if (!user) {
-        // Pārbauda vai atbilde ir veiksmīga, ja nē tad met kļūdu
-        reset({
-          email: '',
-          password: '',
-        });
-        setMessageColor('red');
-        setError('submit', {
-          type: 'manual',
-          message: 'Notika kļūda'
-        });
-        return;
-      };
-
+      await signIn(credentials);
+      login();      
       navigate('/');
-      document.cookie = `userId=${user._id}; max-age=${60*60}; path=/`
-
     } catch (error) {
-      setMessageColor('red');
-      setError('submit', {
-        type: 'manual',
-        message: 'e-pasts vai parole ir nepareizi'
-      });
-
       console.error('Error accured', error)
-      const timeoutId = setTimeout(() => {
-        setMessageColor('green');
-        reset({
-          email: '',
-          password: '',
-        });
-      }, 3000); // Pēc 3 sekundēm uzraksts pazudīs
-      return () => clearTimeout(timeoutId);
+      setIsError(true);
     }
   };
 
 
   return (
     <SignInLayout>
-
+      <PageTitle title="Signin" />
       <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
         <div className="flex items-center justify-center">
           <div className="w-full border-stroke xl:w-1/2">
@@ -87,27 +58,27 @@ const SignIn: React.FC = () => {
                   svg={<EnvelopeIcon />}
                 />
                 <TextInputField 
-                    name='password'
-                    label='Parole'
-                    type='password'
-                    placeholder='Ievadiet paroli'
-                    register={register}
-                    registerOptions={{ required: 'Parole ir obligāta'}}
-                    error={errors.password}
-                    svg={<LockClosedIcon />}
-                  />
+                  name='password'
+                  label='Parole'
+                  type='password'
+                  placeholder='Ievadiet paroli'
+                  register={register}
+                  registerOptions={{ required: 'Parole ir obligāta' }}
+                  error={errors.password}
+                  svg={<LockClosedIcon />}
+                />
 
                 <div className="mb-5">
-                {errors.submit &&
-                  <div className='flex items-center justify-center mt-6 mb-6 bold'>
-                     <span className={`text-${messageColor}-500 italic centered`}>{errors.submit.message}</span>
-                  </div>
-                }
-                  <input
-                    {...register('submit')}
-                    type="submit"
-                    value="Ielogoties"
-                    className="w-full cursor-pointer rounded-lg border border-primary bg-primary p-4 text-white transition hover:bg-opacity-90"
+                  <SubmitButton 
+                    name='submit'
+                    type='submit'
+                    value='Ielogoties'
+                    disabled={isSubmitting}
+                    register={register}
+                    registerOptions={{required: 'E-pasts vai parole ir nepareizi'}}
+                    error={errors.submit}
+                    errorSubmit={isError}
+                    errorMessage='Parole vai e-pasts nav pareizi'
                   />
                 </div>
               </form>
@@ -120,3 +91,4 @@ const SignIn: React.FC = () => {
 };
 
 export default SignIn;
+

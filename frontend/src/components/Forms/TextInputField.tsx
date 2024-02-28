@@ -11,7 +11,7 @@ interface TextInputFieldProps {
     [x: string]: any,
 }
 
-const TextInputField = ({name, label, register, registerOptions, error, svg, ...props}: TextInputFieldProps) => {
+const TextInputField = ({name, label, register, registerOptions, onChange, error, svg, ...props}: TextInputFieldProps) => {
     return (
         <div className="mb-4">
             <label className="mb-2.5 block font-medium text-black dark:text-white">

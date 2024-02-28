@@ -1,38 +1,28 @@
-import React, { useEffect, useState } from 'react';
-import { Route, Navigate } from 'react-router-dom';
-import { getLoggedInUser } from '../../network/orders_api';
+import React, { useContext } from 'react';
+import { Navigate } from 'react-router-dom';
+import AuthContext from './AuthContext';
 
 interface ProtectedRouteProps {
-    path: string;
-    element: JSX.Element;
+    element: React.ReactElement,
+    accessRole?: string[],
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({path, element, ...rest }) => {
-    const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
-    useEffect(() => {
-        const checkAuth = async () => {
-            try {
-                const user = await getLoggedInUser();                
-                setLoggedIn(!!user);
-            } catch (error) {
-                console.error(error);                
-            } finally {
-                setLoggedIn(false);
-            }
-        };
-        checkAuth();
-    }, []);
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
+    element,
+    accessRole,
+}) => {    
+    const { isAuthenticated, user } = useContext(AuthContext);
 
-    if (loggedIn === null) {
-        console.log("loading...");
-        return <div>Loading...</div>;
-    };
-    
-    if (!loggedIn) {
-        return <Navigate to='/auth/signin' />
-    };
+    if (!isAuthenticated) {
+        <Navigate to='/auth/signin' />;
+        return element;
+    }
 
-    return <Route {...rest} path={path} element={element} />
+    if (!accessRole?.includes(user?.role || '')) {
+        return <Navigate to='/' />;
+    }
+
+    return element;
 };
 
 export default ProtectedRoute;

@@ -1,7 +1,7 @@
 import { useForm } from 'react-hook-form';
 import Breadcrumb from '../../components/Breadcrumbs/Breadcrumb';
 import DefaultLayout from '../../layout/DefaultLayout';
-import { User } from '../../types/users';
+import { User } from '../../models/user';
 import { SignUpCredentials } from '../../network/orders_api';
 import * as OrderApi from '../../network/orders_api';
 import { BriefcaseIcon, EnvelopeIcon, LockClosedIcon, PhoneIcon, UserIcon } from '@heroicons/react/24/solid';
@@ -10,9 +10,9 @@ import SubmitButton from '../../components/Forms/SubmitButton';
 import SelectField from '../../components/Forms/SelectField';
 import { TEAlert } from 'tw-elements-react';
 import { useState } from 'react';
+import PageTitle from '../../components/PageTitle';
 
 interface SignUpProps {
-  onDismiss: () => void,
   onSignUpSuccessfull: (user: User) => void,
 }
 
@@ -22,11 +22,11 @@ const userRoleOptionsArray = [
   {id: 3, value: 'user', name: 'Lietotājs'},
 ];
 
-const SignUp = ({ onDismiss, onSignUpSuccessfull }: SignUpProps) => {
+const SignUp = ({ onSignUpSuccessfull }: SignUpProps) => {
   const { watch, register, handleSubmit, formState: { errors, isSubmitting } } = useForm<SignUpCredentials>();
   const [open, setOpen] = useState<boolean>(false);
 
-  const password = watch('password');  
+  const password = watch('password');
 
   {/*Funkcija Regex parolei - 6+ burti, 1 lielais burts, 1 cipars, 1 simbols */}
   const passwordRegex = (value: string, message: string) => {
@@ -54,7 +54,6 @@ const SignUp = ({ onDismiss, onSignUpSuccessfull }: SignUpProps) => {
       setOpen(true);
 
     } catch (error) {
-      alert(error);
       console.error(error);
     }
   };
@@ -62,6 +61,7 @@ const SignUp = ({ onDismiss, onSignUpSuccessfull }: SignUpProps) => {
   return (
     <DefaultLayout>
       <Breadcrumb pageName="Reģistrācija" />
+      <PageTitle title="Reģistrācija" />
       <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
         <div className="flex flex-wrap items-center justify-center">         
 
@@ -159,8 +159,13 @@ const SignUp = ({ onDismiss, onSignUpSuccessfull }: SignUpProps) => {
                   error={errors.role}
                 />                
                 <SubmitButton
+                  name='submit'
+                  type='submit'
                   value='Reģistrēt lietotāju'
                   disabled={isSubmitting}
+                  register={register}
+                  registerOptions={{required: 'Reģistrācija neizdevās, mēģieniet vēlreiz'}}
+                  error={errors.submit}
                 />
 
                 <TEAlert dismiss autohide delay={5000} open={open} setOpen={setOpen} color="bg-green-300 text-green-950 z-999">
