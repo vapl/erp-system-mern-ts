@@ -4,8 +4,6 @@ import { requiresAuth } from '../middleware/auth';
 
 const router = express.Router();
 
-// router.get('/:userId', userController.getNote)
-
 router.get('/', requiresAuth, userController.getAuthenticatedUser);
 
 router.get('/allUsers', userController.getUsers);
@@ -15,6 +13,9 @@ router.post('/signup', userController.signUp);
 router.post('/login', userController.login);
 
 router.post('/logout', userController.logout);
-// router.patch('/:userId', userController.updateNote)
+
+router.put('/userUpdate', userController.handleFileUpload, userController.updateUser);
+
+router.delete('/delete', userController.deleteFile);
 
 export default router;

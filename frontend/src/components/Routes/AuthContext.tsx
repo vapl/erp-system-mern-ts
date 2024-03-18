@@ -7,6 +7,7 @@ type AuthContextType = {
     user: User | null,
     login: () => void,
     logout: () => void,
+    updateUser: (updatedUser: User | null) => void,
 };
 
 const AuthContext = createContext<AuthContextType>({
@@ -14,6 +15,7 @@ const AuthContext = createContext<AuthContextType>({
     user: null,
     login: () => {},
     logout: () => {},
+    updateUser: () => {},
 })
 
 export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
@@ -31,7 +33,7 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
             }
         };
         checkAuth();
-    }, []);
+    }, [isAuthenticated]);
 
     const login = () => {
         setIsAuthenticated(true);
@@ -40,10 +42,15 @@ export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
     const logout = () => {
         OrdersApi.logout();
         setIsAuthenticated(false);
+        setUser(null);
     };
 
+    const updateUser = (updatedUser: User | null) => {
+        setUser(updatedUser)
+    }
+
     return (
-        <AuthContext.Provider value={{ isAuthenticated, user, login, logout }}>
+        <AuthContext.Provider value={{ isAuthenticated, user, login, logout, updateUser }}>
             {children}
         </AuthContext.Provider>
     );

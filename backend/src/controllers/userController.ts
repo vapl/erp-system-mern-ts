@@ -1,9 +1,25 @@
-import { RequestHandler } from "express";
-import UserModel from '../models/user';
-import createHttpError from "http-errors";
 import bcrypt from 'bcrypt';
-import { ObjectId } from "mongoose";
+import { RequestHandler } from "express";
+import createHttpError from "http-errors";
+import mongoose, { ObjectId } from "mongoose";
+import multer from "multer";
+import UserModel from '../models/user';
+import fs from 'fs';
+import path from 'path';
 
+// set up storage directory
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, 'uploads/');
+    },
+    filename: function (req, file, cb) {
+        cb(null, file.originalname);
+    }
+});
+
+const upload = multer({ storage: storage });
+
+// Get users
 export const getUsers:RequestHandler = async (req, res, next) => {
     try {
         const users = await UserModel.find().exec();
@@ -13,6 +29,7 @@ export const getUsers:RequestHandler = async (req, res, next) => {
     }
 };
 
+// Get authentificated user
 export const getAuthenticatedUser: RequestHandler = async (req, res, next) => {
     try {
         const user = await UserModel
@@ -25,6 +42,74 @@ export const getAuthenticatedUser: RequestHandler = async (req, res, next) => {
     }
 };
 
+// Update created user
+interface updateUserParams {
+    userId: string,
+    [key: string]: string,
+}
+
+interface updateCreatedUser {
+    name?: string,
+    surname?: string,
+    email?: string,
+    phone_number?: string,
+    occupation?: string,
+    profile_image?: string,
+
+}
+
+// Middleware to handle file upload for profile image
+export const handleFileUpload: RequestHandler = (req, res, next) => {
+    const uploadMiddleware = upload.single('profile_image');
+    uploadMiddleware(req, res, function (err) {
+    if (err) {
+    // Handle error
+    return next(err);
+    }
+    // Check if a file was uploaded
+    if (req.file) {
+    // Set the profile_image field to the file path or URL
+    req.body.profile_image = req.file; // Update this line with the appropriate field from req.file
+    }
+    // Call next middleware
+      next();
+    });
+  };
+
+
+// Request handler for updating user
+export const updateUser: RequestHandler<updateUserParams, unknown, updateCreatedUser> = async (req, res, next) => {
+
+    // Extract other updated user data from the request body    
+    const { name, surname, email, phone_number, occupation } = req.body;
+    
+    try {
+        const userId = req.session.userId;
+        if (!userId || !mongoose.isValidObjectId(userId)) {
+            throw createHttpError(400, 'Invalid user id');
+        }
+        
+        const user = await UserModel.findByIdAndUpdate(userId).exec();
+        if (!user) {
+            throw createHttpError(404, 'User not found');
+        }
+        
+        if (name) user.name = name;
+        if (surname) user.surname = surname;
+        if (email) user.email = email;
+        if (phone_number) user.phone_number = phone_number;
+        if (occupation) user.occupation = occupation;
+        (req.file) ? user.profile_image = req.file.originalname : user.profile_image = 'profile_img_placeholder.jpeg';
+
+        const updatedUser = await user.save();
+
+        res.status(200).json(updatedUser);
+    } catch (error) {
+        next(error);
+    }
+};
+
+// SignUp
 interface SignUpBody {
     name: string,
     surname?: string,
@@ -33,6 +118,7 @@ interface SignUpBody {
     phone_number?: string,
     occupation?: string,
     role: string,
+    profile_image?: string,
     orders?: ObjectId[],
     glass_reg?: ObjectId[],
 }
@@ -45,6 +131,7 @@ export const signUp: RequestHandler<unknown, unknown, SignUpBody, unknown> = asy
     const phoneNumber = req.body.phone_number;
     const occupation = req.body.occupation;
     const role = req.body.role;
+    const profileImage = req.body.profile_image;
 
     try {
         if (!name || !role || !email || !passwordRaw) {
@@ -66,6 +153,7 @@ export const signUp: RequestHandler<unknown, unknown, SignUpBody, unknown> = asy
             phone_number: phoneNumber,
             occupation: occupation,
             role: role,
+            profile_image: profileImage,
             orders: [],
             glass_reg: []
 
@@ -84,6 +172,7 @@ interface LoginBody {
     password?: string,
 }
 
+// Login
 export const login: RequestHandler<unknown, unknown, LoginBody, unknown> = async (req, res, next) => {
     const email = req.body.email;
     const password = req.body.password;
@@ -113,6 +202,7 @@ export const login: RequestHandler<unknown, unknown, LoginBody, unknown> = async
     }
 };
 
+// Logout
 export const logout: RequestHandler = (req, res, next) => {
     req.session.destroy(error => {
         if (error) {
@@ -124,4 +214,41 @@ export const logout: RequestHandler = (req, res, next) => {
         }
 
     })
+};
+
+
+export const deleteFile: RequestHandler<updateUserParams, unknown, { profile_image: string }> = async (req, res, next) => {
+    const { profile_image } = req.body;
+
+    // Check if fileName is not provided
+    if (!profile_image) {
+        return res.status(400).json({ message: 'File name not provided in the request body' });
+    }
+
+    const filePath = path.join(process.cwd(), 'uploads', profile_image);
+    try {
+        fs.stat(filePath, async (err, stats) => {
+            if (err || !stats.isFile() || profile_image === 'profile_img_placeholder.jpeg') {
+                // File does not exist
+                return res.status(404).json({ message: 'File not found' });
+            }
+    
+            fs.unlink(filePath, async (err) => {
+                if (err) {
+                    console.error('Error deleting file:', err);
+                    next(err);
+                    return res.status(500).json({
+                        message: 'Could not delete the file',
+                        error: err.message, // Include error message for debugging purposes
+                    });
+                }
+                res.status(200).send({
+                    message: 'File is deleted.',
+                });
+            });
+        });
+    } catch (error) {
+        next(error)
+    }
+    
 };

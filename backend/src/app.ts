@@ -15,7 +15,7 @@ const app = express();
 app.use(cors({
     origin: 'http://localhost:5173',
     credentials: true,
-    methods: ['GET', 'POST'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ["Content-Type, Authorization"],
 }));
 
@@ -37,6 +37,7 @@ app.use(session({
     })
 }));
 
+app.use('/uploads', express.static('uploads'));
 app.use('/api/users', userRoutes);
 // app.use('/api/notes', notesRoutes);
 app.use('/api/orders', orderRegRoutes);

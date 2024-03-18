@@ -1,8 +1,7 @@
 import { useContext, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import AuthContext from '../../components/Routes/AuthContext';
-
-import UserOne from '../../images/user/user-01.png';
+import UserProfileImage from '../../pages/UiElements/userProfileImage';
 
 const DropdownUser = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -51,10 +50,9 @@ const DropdownUser = () => {
           </span>
           <span className="block text-xs">{user?.occupation}</span>
         </span>
-
-        <span className="h-12 w-12 rounded-full">
-          <img src={UserOne} alt="User" />
-        </span>
+        <div className="h-14 w-14 rounded-full overflow-hidden">
+          <UserProfileImage />
+        </div>
 
         <svg
           className="hidden fill-current sm:block"

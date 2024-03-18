@@ -14,12 +14,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     const { isAuthenticated, user } = useContext(AuthContext);
 
     if (!isAuthenticated) {
-        <Navigate to='/auth/signin' />;
-        return element;
+        return <Navigate to='/auth/signin' />;
     }
 
     if (!accessRole?.includes(user?.role || '')) {
-        return <Navigate to='/' />;
+        return element;
     }
 
     return element;

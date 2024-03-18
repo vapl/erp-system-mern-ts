@@ -7,4 +7,5 @@ export interface User {
     phone_number: string;
     occupation: string;
     role: string;
+    profile_image: string;
 }
