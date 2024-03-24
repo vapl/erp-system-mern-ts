@@ -10,14 +10,17 @@ import SubmitButton from '../components/Forms/SubmitButton';
 import { TEAlert } from 'tw-elements-react';
 import { useForm } from 'react-hook-form';
 import { User } from '../models/user';
-import UserProfileImage from './UiElements/userProfileImage';
+import UserProfileImage from './UiElements/UserProfileImage';
+import FileInputField from '../components/Forms/FileInputField';
+import ConfirmationDialog from './UiElements/ConfirmationDialog';
+import isEqual from 'lodash/isEqual';
 
 const Settings = () => {
   const { user, updateUser } = useContext(AuthContext);
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<OrderApi.updateUserDataCredentials>();
+  const [dialogOpen, setDialogOpen] = useState<boolean>(false);
   const [open, setOpen] = useState<boolean>(false);
-
 
   {/*Funkcija kas pārbauda vai ievadītais e-pasts jau eksistē, 
   ja eksistē, parāda kļūdas paziņojumu*/}
@@ -27,41 +30,44 @@ const Settings = () => {
     const emailExists = emails.some(email => email === value)
     return emailExists ? message : true;
   }
-
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const updatedUser = await OrderApi.getLoggedInUser();
-        updateUser(updatedUser);
-      } catch (error) {
-        console.error(error);
-      }
-    };
-
-    if (open) {
-      fetchUserData();
-    }
-  }, [open, updateUser]);
   
   const onSubmit = async (formData: OrderApi.updateUserDataCredentials) => {    
     try {
-        const imageFormData = new FormData();
+        const userFormData = new FormData();
         
         // Append other form data fields to FormData object
+        
         Object.keys(formData).forEach(key => {
             const typedKey = key as keyof OrderApi.updateUserDataCredentials; // Type assertion
-            if (typedKey !== 'profile_image') {
-                imageFormData.append(typedKey, formData[typedKey]);
+            if (typedKey !== 'profile_image' && typedKey !== 'submit') {
+                userFormData.append(typedKey, formData[typedKey]);
             }
         });
-
-        // Append file
-        const file = formData.profile_image[0];
-        imageFormData.append('profile_image', file);
           
         // Make a PUT request to update user data
-        await OrderApi.updateUserData(imageFormData);
-        setOpen(true);
+        await OrderApi.updateUserData(userFormData);
+        const updatedUserCredentials = await OrderApi.getLoggedInUser();
+
+        const userValues = {
+          name: user?.name,
+          surname: user?.surname,
+          email: user?.email,
+          phone_number: user?.phone_number,
+          occupation: user?.occupation,
+        }
+
+        const { profile_image, submit, ...newForm } = formData;
+
+        const changesMade = !isEqual(userValues, newForm);
+
+        if (!changesMade) {
+          setOpen(false);
+          return;
+        } else {
+          updateUser(updatedUserCredentials);
+          setOpen(true);
+        }
+
     } catch (error) {
         console.error(error);
     }
@@ -74,22 +80,34 @@ const Settings = () => {
         // Append file
         const file = formData.profile_image[0];
         imageFormData.append('profile_image', file);
-          
+        
         // Make a PUT request to update user data
         await OrderApi.updateUserData(imageFormData);
-        setOpen(true);
+        const updatedUserCredentials = await OrderApi.getLoggedInUser();
+        const changesMade = !isEqual(user?.profile_image, updatedUserCredentials.profile_image);
+        if (changesMade) {
+          updateUser(updatedUserCredentials);
+          setOpen(true);
+        }
     } catch (error) {
         console.error(error);
     }
   };
-
   const deleteProfileImage = async () => {
     if (!user?.profile_image) {
       console.error('User image is undefinend');
+      setOpen(false)
       return;
     }
     try {
       await OrderApi.deleteFile(user.profile_image);
+      const apiUserData = await OrderApi.getLoggedInUser();
+      const changesMade = !isEqual(user.profile_image, apiUserData.profile_image);
+      setDialogOpen(false);
+      if (changesMade) {
+        updateUser({ ...user, profile_image: 'profile_img_placeholder.jpeg' });
+        setOpen(true);
+      }
     } catch (error) {
       console.error('Error deleting file', error);
     }      
@@ -211,44 +229,44 @@ const Settings = () => {
                 </h3>
               </div>
               <div className="p-7">
-                <form onSubmit={handleSubmit(onSubmitImage)}>
-                  <div className="mb-4 flex items-center gap-3">
-                    <div className="h-14 w-14 rounded-full overflow-hidden">
-                      <UserProfileImage />
-                    </div>
-                    <div>
-                      <span className="mb-1.5 text-black dark:text-white">
-                        Labot profila bildi
-                      </span>
-                      <span className="flex gap-2.5">
-                        <button onClick={deleteProfileImage} className="text-sm hover:text-primary">
-                          Izdzēst
-                        </button>
-                        <button className="text-sm hover:text-primary">
-                          Atjaunot
-                        </button>
-                      </span>
-                    </div>
+                <div className="mb-4 flex items-center gap-3">
+                  <div className="h-14 w-14 rounded-full overflow-hidden">
+                    <UserProfileImage />
                   </div>
-
+                  <div>
+                    <span className="mb-1.5 text-black dark:text-white">
+                      Labot profila bildi
+                    </span>
+                    <span className="flex gap-2.5">
+                      <button onClick={() => setDialogOpen(true)} className="text-sm hover:text-danger">
+                        Izdzēst
+                      </button>
+                    </span>
+                    {dialogOpen &&
+                    <ConfirmationDialog 
+                        isOpen={dialogOpen}
+                        title='Vai tiešām dzēst bildi?'
+                        actionButtonCancel='Atcelt'
+                        actionButtonConsent='Dzēst'
+                        consentFunction={deleteProfileImage}
+                      />
+                    }
+                  </div>
+                </div>
+                <form onSubmit={handleSubmit(onSubmitImage)}>
                   <div
                     id="FileUpload"
                     className="relative mb-5.5 block w-full cursor-pointer appearance-none rounded border border-dashed border-primary bg-gray py-4 px-4 dark:bg-meta-4 sm:py-7.5"
                   >
-                    <TextInputField
+                    <FileInputField
+                      className="absolute inset-0 z-50 m-0 h-full w-full cursor-pointer p-0 opacity-0 outline-none"
+                      accept="image/*"
                       name='profile_image'
                       label=''
                       type='file'
                       register={register}
                       error={errors.profile_image}
                     />
-                    {/* <input
-                      onChange={handleSubmit(onSubmit)}
-                      type="file"
-                      accept="image/*"
-                      name='profile_image'
-                      className="absolute inset-0 z-50 m-0 h-full w-full cursor-pointer p-0 opacity-0 outline-none"
-                    /> */}
                     <div className="flex flex-col items-center justify-center space-y-3">
                       <span className="flex h-10 w-10 items-center justify-center rounded-full border border-stroke bg-white dark:border-strokedark dark:bg-boxdark">
                         <svg
@@ -279,10 +297,10 @@ const Settings = () => {
                         </svg>
                       </span>
                       <p>
-                        <span className="text-primary">Click to upload</span> or
-                        drag and drop
+                        <span className="text-primary">Lejupielādēt </span>
+                        vai ievilkt failu
                       </p>
-                      <p className="mt-1.5">SVG, PNG, JPG or GIF</p>
+                      <p className="mt-1.5">PNG vai JPG</p>
                       <p>(max, 800 X 800px)</p>
                     </div>
                   </div>

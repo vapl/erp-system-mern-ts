@@ -106,6 +106,7 @@ export async function deleteFile(profileImage: string) {
         'content-type': 'application/json'
       },
       body: JSON.stringify({profile_image: profileImage}),
+      credentials: 'include',
     });
     return response;
     } catch (error) {

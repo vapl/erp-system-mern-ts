@@ -99,7 +99,7 @@ export const updateUser: RequestHandler<updateUserParams, unknown, updateCreated
         if (email) user.email = email;
         if (phone_number) user.phone_number = phone_number;
         if (occupation) user.occupation = occupation;
-        (req.file) ? user.profile_image = req.file.originalname : user.profile_image = 'profile_img_placeholder.jpeg';
+        if (req.file) user.profile_image = req.file.originalname;
 
         const updatedUser = await user.save();
 
@@ -225,6 +225,18 @@ export const deleteFile: RequestHandler<updateUserParams, unknown, { profile_ima
         return res.status(400).json({ message: 'File name not provided in the request body' });
     }
 
+    const userId = req.session.userId;
+    if (!userId || !mongoose.isValidObjectId(userId)) {
+        throw createHttpError(400, 'Invalid user id');
+    }
+    
+    const user = await UserModel.findByIdAndUpdate(userId).exec();
+    if (!user) {
+        throw createHttpError(404, 'User not found');
+    }
+
+    console.log(user.profile_image); 
+
     const filePath = path.join(process.cwd(), 'uploads', profile_image);
     try {
         fs.stat(filePath, async (err, stats) => {
@@ -242,6 +254,8 @@ export const deleteFile: RequestHandler<updateUserParams, unknown, { profile_ima
                         error: err.message, // Include error message for debugging purposes
                     });
                 }
+                user.profile_image = 'profile_img_placeholder.jpeg';
+                user.save();
                 res.status(200).send({
                     message: 'File is deleted.',
                 });
