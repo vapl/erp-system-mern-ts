@@ -51,7 +51,7 @@ const DropdownUser = () => {
           <span className="block text-xs">{user?.occupation}</span>
         </span>
         <div className="h-14 w-14 rounded-full overflow-hidden">
-          <UserProfileImage />
+          <UserProfileImage imageName={user?.profile_image}/>
         </div>
 
         <svg

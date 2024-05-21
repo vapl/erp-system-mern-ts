@@ -10,7 +10,7 @@ import path from 'path';
 // set up storage directory
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, 'uploads/');
+        cb(null, 'uploads/profile-images');
     },
     filename: function (req, file, cb) {
         cb(null, file.originalname);
@@ -74,7 +74,7 @@ export const handleFileUpload: RequestHandler = (req, res, next) => {
     // Call next middleware
       next();
     });
-  };
+};
 
 
 // Request handler for updating user
@@ -123,6 +123,48 @@ interface SignUpBody {
     glass_reg?: ObjectId[],
 }
 
+export const updateUserByAdmin: RequestHandler<{_id: string}, unknown, SignUpBody, unknown> = async (req, res, next) => {
+    const { name, surname, email, password, phone_number, occupation, role } = req.body;
+    const adminId = req.session.userId;
+    try {
+        if (!adminId || !mongoose.isValidObjectId(adminId)) {
+            throw createHttpError(404, 'Admin not found');
+        }
+
+        const admin = await UserModel.findById(adminId).exec();
+        if (!admin) {
+            throw createHttpError(404, 'Admin not found');
+        }
+
+        const user = await UserModel.findById(req.params._id).select('+password').exec();
+        if (!user) {
+            throw createHttpError(404, 'User not found');
+        }
+
+        if (admin?.role !== 'admin' && admin?.role !== 'superadmin') {
+            throw createHttpError(403, 'Admin anauthorized');
+        }
+
+        if (name) user.name = name;
+        if (surname) user.surname = surname;
+        if (email) user.email = email;
+        if (password) {
+            const hashedPassword = await bcrypt.hash(password, 10);
+            user.password = hashedPassword;
+        }
+        if (phone_number) user.phone_number = phone_number;
+        if (occupation) user.occupation = occupation;
+        if (role && (role === 'admin' || role === 'superadmin' || role === 'user')) user.role = role;
+
+        const editedUser = await user.save()
+
+        res.status(200).json(editedUser);
+        
+    } catch (error) {
+        next(error);
+    }
+}
+
 export const signUp: RequestHandler<unknown, unknown, SignUpBody, unknown> = async (req, res, next) => {
     const name = req.body.name;
     const surname = req.body.surname;
@@ -131,7 +173,6 @@ export const signUp: RequestHandler<unknown, unknown, SignUpBody, unknown> = asy
     const phoneNumber = req.body.phone_number;
     const occupation = req.body.occupation;
     const role = req.body.role;
-    const profileImage = req.body.profile_image;
 
     try {
         if (!name || !role || !email || !passwordRaw) {
@@ -153,7 +194,7 @@ export const signUp: RequestHandler<unknown, unknown, SignUpBody, unknown> = asy
             phone_number: phoneNumber,
             occupation: occupation,
             role: role,
-            profile_image: profileImage,
+            profile_image: '',
             orders: [],
             glass_reg: []
 
@@ -216,6 +257,26 @@ export const logout: RequestHandler = (req, res, next) => {
     })
 };
 
+export const deleteUser: RequestHandler<unknown, unknown, {_id: string}> = async (req, res, next) => {
+    const userId = req.body._id;
+    if (!userId) {
+        return res.status(400).json({ message: 'User doesn\'t exist' });
+    }
+
+    if (!userId || !mongoose.isValidObjectId(userId)) {
+        throw createHttpError(400, 'Invalid user id');
+    }
+
+    try {
+        await UserModel.findByIdAndDelete(userId).exec();
+
+        res.status(200).send({ message: 'User has been deleted' });
+    } catch (error) {
+        next(error);
+    }
+    
+}
+
 
 export const deleteFile: RequestHandler<updateUserParams, unknown, { profile_image: string }> = async (req, res, next) => {
     const { profile_image } = req.body;
@@ -235,9 +296,7 @@ export const deleteFile: RequestHandler<updateUserParams, unknown, { profile_ima
         throw createHttpError(404, 'User not found');
     }
 
-    console.log(user.profile_image); 
-
-    const filePath = path.join(process.cwd(), 'uploads', profile_image);
+    const filePath = path.join(process.cwd(), 'uploads/profile-images', profile_image);
     try {
         fs.stat(filePath, async (err, stats) => {
             if (err || !stats.isFile() || profile_image === 'profile_img_placeholder.jpeg') {

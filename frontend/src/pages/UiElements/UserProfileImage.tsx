@@ -1,12 +1,24 @@
-import { useContext } from "react";
-import AuthContext from "../../components/Routes/AuthContext";
+import React from "react";
 
-const UserProfileImage = () => {
-    const { user } = useContext(AuthContext);
-    const userProfileImagePath = `http://localhost:5000/uploads/${user?.profile_image}`;
+interface UserProfileImageProps {
+    imageName?: string,
+    alt?: string,
+    className?: string,
+}
+
+const UserProfileImage: React.FC<UserProfileImageProps> = ({ 
+    imageName, 
+    alt='User', 
+    className='h-full w-full object-cover rounded-full' 
+}) => {
+    if (!imageName) {
+        return <div>NO IMAGE</div>
+    }
+
+    const userProfileImagePath = `http://localhost:5000/uploads/profile-images/${imageName}`;
 
     return (
-        <img src={userProfileImagePath} alt="User" className='h-full w-full object-cover rounded-full'/>
+        <img src={userProfileImagePath} alt={alt} className={className}/>
     );
 }
 

@@ -21,10 +21,7 @@ const orderRegSchema = new Schema({
         mat_order_date: Date,
         mat_delivery_week: Number,
         in_stock: Boolean,
-        order_tech_doc: [{
-            filename: String,
-            content: Buffer,
-        }],
+        order_tech_doc: [String],
         glass_reg: [{
             type: Schema.Types.ObjectId,
             ref: 'GlassReg',

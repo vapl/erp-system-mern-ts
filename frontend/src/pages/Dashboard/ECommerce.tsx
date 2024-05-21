@@ -5,13 +5,12 @@ import ChartThree from '../../components/Charts/ChartThree';
 import ChartTwo from '../../components/Charts/ChartTwo';
 import ChatCard from '../../components/Chat/ChatCard';
 import MapOne from '../../components/Maps/MapOne';
-import TableOne from '../../components/Tables/TableOne';
-import DefaultLayout from '../../layout/DefaultLayout';
 import PageTitle from '../../components/PageTitle';
+import TableOne from '../../components/Tables/TableOne';
 
 const ECommerce: React.FC = () => {
   return (
-    <DefaultLayout>
+    <>
       <PageTitle title="ALDENS ERP System" />
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6 xl:grid-cols-4 2xl:gap-7.5">
         <CardDataStats title="Total views" total="$3.456K" rate="0.43%" levelUp>
@@ -110,7 +109,7 @@ const ECommerce: React.FC = () => {
         </div>
         <ChatCard />
       </div>
-    </DefaultLayout>
+    </>
   );
 };
 

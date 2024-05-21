@@ -7,7 +7,7 @@ import TextInputField from '../../components/Forms/TextInputField';
 import PageTitle from '../../components/PageTitle';
 import AuthContext from '../../components/Routes/AuthContext';
 import SignInLayout from '../../layout/SignInLayout';
-import { LoginCredentials, signIn } from '../../network/orders_api';
+import { LoginCredentials, signIn } from '../../network/users_api';
 
 const SignIn = () => {
   const { login } = useContext(AuthContext);

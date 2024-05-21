@@ -10,18 +10,16 @@ interface ProtectedRouteProps {
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     element,
     accessRole,
-}) => {    
+}) => {
     const { isAuthenticated, user } = useContext(AuthContext);
 
     if (!isAuthenticated) {
-        return <Navigate to='/auth/signin' />;
-    }
+        return <Navigate to='/auth/signin' replace/>;
+    };
 
-    if (!accessRole?.includes(user?.role || '')) {
+    if (accessRole?.includes(user?.role || '')) {
         return element;
-    }
-
-    return element;
+    };
 };
 
 export default ProtectedRoute;

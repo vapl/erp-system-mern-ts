@@ -37,7 +37,7 @@ app.use(session({
     })
 }));
 
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads/profile-images', express.static('uploads/profile-images'));
 app.use('/api/users', userRoutes);
 // app.use('/api/notes', notesRoutes);
 app.use('/api/orders', orderRegRoutes);

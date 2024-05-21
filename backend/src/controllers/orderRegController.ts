@@ -4,6 +4,45 @@ import UserModel from '../models/user';
 import createHttpError from "http-errors";
 import mongoose from "mongoose";
 import moment from 'moment';
+import multer from "multer";
+import archiver from 'archiver';
+import * as fs from 'fs';
+import * as path from 'path';
+
+// set up storage directory
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, 'uploads/files');
+    },
+    filename: function (req, file, cb) {
+        cb(null, file.originalname);
+    }
+});
+
+const upload = multer({ storage: storage });
+
+// Middleware to handle file upload
+export const handleFileUpload: RequestHandler = (req, res, next) => {
+    const uploadMiddleware = upload.array('order_tech_doc');
+
+    uploadMiddleware(req, res, function(err) {
+        if (err) {
+            return next(err);
+        }
+        // Check if a file was uploaded
+        if (!req.files || req.files?.length === 0) {
+            return next; 
+        }
+
+        const filePaths = Array.isArray(req.files)
+            ? req.files.map(file => file.path)
+            : [];
+
+        req.body.components.order_tech_doc = filePaths;
+
+        next();
+    });
+};
 
 export const getOrders:RequestHandler = async (req, res, next) => {
     try {
@@ -42,10 +81,9 @@ export const createOrder: RequestHandler<unknown, unknown, createNewOrder> = asy
             throw createHttpError(400, 'Order name is missing');
         }
 
-        const orderTechDoc = {
-            filename: req.file.originalname,
-            content: req.file.buffer,
-        };
+        // const orderTechDoc = Array.isArray(req.files)
+        //     ? req.files.map(file => file.path)
+        //     : [];
 
         const userId = req.session.userId;
 
@@ -69,7 +107,7 @@ export const createOrder: RequestHandler<unknown, unknown, createNewOrder> = asy
                 mat_order_date: null,
                 mat_delivery_week: 0,
                 in_stock: false,
-                order_tech_doc: [orderTechDoc],
+                order_tech_doc: [],
                 glass_reg: [],
             },
             user: userId
@@ -168,13 +206,54 @@ export const downloadOrderDocument: RequestHandler<{fileId: string}, unknown, un
             throw createHttpError(404, 'Order document not found');
         }
 
-        const orderTechDoc = components.order_tech_doc[0];
-        const {filename, content} = orderTechDoc;
+        const archive = archiver('zip');
+        res.attachment(`order-${fileId}-documents.zip`);
+
+        archive.on('error', (err) => {
+            throw err;
+        });
+
+        archive.pipe(res);
+
+        for (const filePath of components.order_tech_doc) {
+            const fileContent = await fs.promises.readFile(filePath);
+            const fileName = path.basename(filePath);
+            archive.append(fileContent, { name: fileName });
+        }
+
+        archive.finalize();
         
-        res.setHeader('Content-Type', 'application/octet-stream');
-        res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
-        res.send(content);
     } catch (error) {
         next(error);
     }
-}
+};
+
+export const deleteOrder: RequestHandler<unknown, unknown, {_id: string}> = async (req, res, next) => {
+    const orderId = req.body._id;
+    try {
+        if (!orderId) {
+            return res.status(400).json({ message: 'Order doesn\'t exist' });
+        }
+        
+        if (!orderId || !mongoose.isValidObjectId(orderId)) {
+            throw createHttpError(400, 'Invalid user id');
+        }
+
+        const user = await UserModel.findOne({orders: orderId});
+        if (!user) {
+            return res.status(400).json({ message: 'User not found for given order' })
+        }
+
+        const orderIdObj = new mongoose.Types.ObjectId(orderId);
+
+        user.orders = user.orders.filter(order => !order.equals(orderIdObj));
+
+        await user.save();
+
+        await OrderRegModel.findByIdAndDelete(orderId).exec();
+
+        res.status(200).json({ message: 'Order has been deleted' });
+    } catch (error) {
+        next(error);
+    }
+};

@@ -1,4 +1,4 @@
-import { User } from "../models/user";
+import { Order } from "../models/orders";
 const baseURL = 'http://localhost:5000';
 
 async function fetchData(input: RequestInfo, init?: RequestInit) {
@@ -12,106 +12,52 @@ async function fetchData(input: RequestInfo, init?: RequestInit) {
     }
 };
 
-export async function userProfileImage(user: User): Promise<string> {
-    const response = await fetchData(`${baseURL}/uploads/${user.profile_image}`, { method: 'GET', credentials: 'include' });
+
+export async function getOrders(): Promise<Order[]> {
+    const response = await fetchData(`${baseURL}/api/orders`, {method: 'GET'});
     return response.json();
+};
+
+// Create order
+export interface CreateOrderCredentials {
+    reg_num: string,
+    order_name: string,
+    order_export?: boolean,
 }
 
-export async function getLoggedInUser(): Promise<User> {
-    const response = await fetchData(`${baseURL}/api/users/`, { method: 'GET', credentials: 'include' });
-    return response.json();
-};
-
-export interface SignUpCredentials {
-    name: string,
-    surname: string,
-    email: string,
-    password: string,
-    confirmPassword?: string,
-    phone_number: string,
-    occupation: string,
-    role: string,
-    profile_image: string,
-    submit: string,
-};
-
-export async function getUsersEmail(): Promise<User[]> {
-    const response = await fetch(`${baseURL}/api/users/allUsers`, {method: 'GET'});
-    return response.json();
-};
-
-export async function signUp(credentials: SignUpCredentials): Promise<User> {
-    const response = await fetchData(`${baseURL}/api/users/signup`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(credentials),
-    });
-    return response.json();
-};
-
-export interface LoginCredentials {
-    email: string,
-    password: string,
-    submit: string
-};
-
-export async function signIn(credentials: LoginCredentials): Promise<User> {    
-    const response = await fetchData(`${baseURL}/api/users/login`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(credentials),
-        credentials: 'include',
-    });
-    return response.json();
-};
-
-export interface updateUserDataCredentials {
-    name: string,
-    surname: string,
-    email: string,
-    phone_number: string,
-    occupation: string,
-    profile_image: string,
-    submit: string,
-}
-
-export async function updateUserData(credentials: FormData): Promise<void> {
-    const formData = new FormData();
-    Object.entries(credentials).forEach(([key, value]) => {
-        formData.append(key, value);
-    });
-
-    const response = await fetchData(`${baseURL}/api/users/userUpdate`, {
-        method: 'PUT',
-        body: credentials,
-        credentials: 'include',
-    });
-    return response.json();
-};
-
-export async function logout() {
-    await fetchData(`${baseURL}/api/users/logout`, {method: 'POST', credentials: 'include',});
-};
-
-// delete file
-export async function deleteFile(profileImage: string) {
+export async function createOrder(credentials: CreateOrderCredentials): Promise<Order> {
     try {
-        const response = await fetch(`${baseURL}/api/users/delete`, {
-      method: 'DELETE',
-      headers: {
-        'content-type': 'application/json'
-      },
-      body: JSON.stringify({profile_image: profileImage}),
-      credentials: 'include',
-    });
-    return response;
+        const response = await fetchData(`${baseURL}/api/orders/newOrder`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(credentials),
+        });
+        return response.json();
+        
     } catch (error) {
-        console.error('Error deleting file', error);
+        console.error('Error creating new order', error);
         throw error;
     }
 };
 
+// Delete order
+export async function deleteOrder(orderId: string) {
+    try {
+        const response = await fetchData(`${baseURL}/api/orders/deleteOrder`, {
+            method: 'DELETE',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ _id: orderId }),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to delete order');
+        }
+
+        return response;
+    } catch (error) {
+        console.error('Error deleting order', error);
+        throw error;
+    }
+};

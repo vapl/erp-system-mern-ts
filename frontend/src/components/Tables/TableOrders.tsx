@@ -1,17 +1,16 @@
-import { useEffect, useState } from "react";
-import { Order } from "../../models/orders";
-import { 
-  TECollapse,
-  TERipple,
-  TEModal,
-  TEModalDialog,
-  TEModalContent,
-  TEModalHeader,
-  TEModalBody,
-} from "tw-elements-react";
-import { User } from "../../models/user";
 import moment from 'moment';
-import { DocumentArrowDownIcon } from '@heroicons/react/24/solid'
+import { useEffect, useState } from "react";
+import {
+  TECollapse,
+  TERipple
+} from "tw-elements-react";
+import DeleteIcon from '../../images/icon/icon-delete.svg';
+import { Order } from "../../models/orders";
+import { User } from "../../models/user";
+import * as OrdersApi from '../../network/orders_api';
+import NewOrder from "../../pages/Orders/NewOrder";
+import ConfirmationDialog from "../../pages/UiElements/ConfirmationDialog";
+import ModalDialog from "../Modals/ModalDialog";
 
 
 
@@ -19,7 +18,9 @@ const TableOrders = () => {
   const [show, setShow] = useState<number | null>(null);
   const [orders, setOrders] = useState<Order[]>([]);
   const [users, setUsers] = useState<User[]>([]);
-  const [showVerticalyCenteredModal, setShowVerticalyCenteredModal] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState<boolean>(false);
+  const [orderId, setOrderId] = useState<string>('');
+  const [addOrder, setAddOrder] = useState<boolean>(false);
   
   const toggleShow = (key: number) => {
     setShow((prevShow) => (prevShow === key ? null : key));
@@ -29,9 +30,7 @@ const TableOrders = () => {
   useEffect(() => {
     const loadOrders = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/orders', {method: 'GET'});
-        console.debug('Response', response);
-        const orders = await response.json();
+        const orders = await OrdersApi.getOrders();
         setOrders(orders);
       } catch (error) {
         console.error(error);
@@ -79,62 +78,37 @@ const TableOrders = () => {
       alert('Failed to download file');
     }
   };
-  
-  const modalVisibility = (visible: boolean) => {
-    const teModal = document.querySelector('.te-modal');
-    if (visible) {
-      teModal?.classList.add('.te-modal')
-    } else {
-      teModal?.classList.remove('.te-modal')
-    }
-    
-    setShowVerticalyCenteredModal(visible);    
-  };
 
-  {/* Create New order */}
-  const [regNum, setRegNum] = useState('');
-  const [orderName, setOrderName] = useState('');
-  const [exportBoo, setExportBoo] = useState(false);
-  const [orderTechDoc, setOrderTechDoc] = useState<File | null>(null)
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
+  // Delete Order
+  const deleteOrder = async (orderId: string) => {
     try {
-      const formData = new FormData();
-      formData.append('reg_num', regNum);
-      formData.append('order_name', orderName);
-      formData.append('order_export', exportBoo.toString());
+      await OrdersApi.deleteOrder(orderId);
 
-      if (orderTechDoc) {
-        formData.append('order_tech_doc', orderTechDoc);
-      }
-
-      const response = await fetch('http://localhost:5000/api/orders/newOrder', {
-        method: 'POST',
-        body: formData,
-      });
-      console.log('formData: ', formData );
-      
-      response.ok 
-        ? console.log('The order has been successfully created')
-        : console.log('Something went wrong')
-
+      const updatedOrders = orders.filter(order => order._id !== orderId);
+      setOrders(updatedOrders);
+      setDialogOpen(false);
     } catch (error) {
-      console.error('Error: ', error)
-    }    
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.currentTarget.files?.[0];
-    if (file) {
-      setOrderTechDoc(file);
+      console.error('Error deleting order', error);
     }
   };
-  {/* / Create New order */}
 
   return (
     <>
+      {dialogOpen &&
+        <ConfirmationDialog
+            isOpen={dialogOpen}
+            title='Vai tiešām dzērst pasūtījumu?'
+            actionButtonCancel='Atcelt'
+            actionButtonConsent='Dzēst'
+            consentFunction={() => deleteOrder(orderId)}
+          />
+      }
+      <ModalDialog
+        open={addOrder} 
+        setOpen={setAddOrder}
+        title='Jauns pasūtījums'
+        content={<NewOrder />}
+      />
       <div className="rounded-sm border border-stroke bg-white px-5 pt-6 pb-2.5 shadow-default dark:border-strokedark dark:bg-boxdark sm:px-7.5 xl:pb-1">
         <div className="max-w-full overflow-x-auto">
           <div className="flex flex-grow justify-between py-6 px-4 md:px-6 xl:px-7.5">
@@ -164,389 +138,14 @@ const TableOrders = () => {
                   </span>
                 </div>
             </div>
-            <a href="#" className="text-primary" onClick={() => modalVisibility(true)}>
+            <a href="#" className="text-primary" onClick={() => setAddOrder(true)}>
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-12 h-12">
                 <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM12.75 9a.75.75 0 0 0-1.5 0v2.25H9a.75.75 0 0 0 0 1.5h2.25V15a.75.75 0 0 0 1.5 0v-2.25H15a.75.75 0 0 0 0-1.5h-2.25V9Z" clipRule="evenodd" />
               </svg>
             </a>
           </div>
 
-          {showVerticalyCenteredModal && (
-            <TEModal
-            className="te-modal"
-            show={showVerticalyCenteredModal}
-            setShow={setShowVerticalyCenteredModal}
-            >
-              <TEModalDialog className="te-modal-dialog">
-                <TEModalContent>
-                  <TEModalHeader>
-                    {/* <!--Modal title--> */}
-                    <h5 className="text-xl font-medium leading-normal text-neutral-800 dark:text-neutral-200">
-                      Jauns pasūtījums
-                    </h5>
-                    {/* <!--Close button--> */}
-                    <button
-                      type="button"
-                      className="box-content rounded-none border-none hover:no-underline hover:opacity-75 focus:opacity-100 focus:shadow-none focus:outline-none"
-                      onClick={() => modalVisibility(false)}
-                      aria-label="Close"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        strokeWidth="1.5"
-                        stroke="currentColor"
-                        className="h-6 w-6"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M6 18L18 6M6 6l12 12"
-                        />
-                      </svg>
-                    </button>
-                  </TEModalHeader>
-                  {/* <!--Modal body--> */}
-                  <TEModalBody>                
-                    <form onSubmit={handleSubmit}>
-                      <div className="space-y-12">
-                        <div className="border-b border-gray-900/10 pb-12">
-                          
-                          <div className="mt-3 grid grid-cols-1 gap-x-6 gap-y-5 sm:grid-cols-6">
-                            <div className="sm:col-span-4">
-                              <label htmlFor="reg_num" className="block text-sm font-medium leading-6 text-gray-900">
-                                Pasūtījuma reģ. numurs
-                              </label>
-                              <div className="mt-2">
-                                <div className="flex rounded-md shadow-sm ring-1 ring-inset ring-gray-300 focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-600 sm:max-w-md">
-                                  <span className="flex select-none items-center pl-3 text-gray-500 sm:text-sm"></span>
-                                  <input
-                                    type="text"
-                                    value={regNum}
-                                    onChange={(e) => setRegNum(e.target.value)}
-                                    autoComplete="reg_num"
-                                    className="block flex-1 border-0 bg-transparent py-1.5 pl-1 text-gray-900 placeholder:text-gray-400 focus:ring-0 sm:text-sm sm:leading-6"
-                                    placeholder="24-XXX"
-                                  />
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="col-span-full">
-                              <label htmlFor="order_name" className="block text-sm font-medium leading-6 text-gray-900">
-                                Klienta / Objekta nosaukums
-                              </label>
-                              <div className="mt-2">
-                                <input
-                                type="text"
-                                  value={orderName}
-                                  onChange={(e) => setOrderName(e.target.value)}
-                                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                                  defaultValue={''}
-                                />
-                              </div>
-                            </div>
-
-                            <div className="flex gap-2 col-span-full">
-                              <div className="flex h-6 items-center">
-                                <input
-                                  id="order_export"
-                                  name="order_export"
-                                  type="checkbox"
-                                  checked={exportBoo}
-                                  onChange={(e) => setExportBoo(e.target.checked)}
-                                  className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
-                                />
-                              </div>
-                              <div className="text-sm leading-6">
-                                <label htmlFor="order_export" className="font-medium text-gray-900">
-                                  Eksports
-                                </label>
-                              </div>
-                            </div>
-
-                            <div className="col-span-full">
-                              <label htmlFor="cover-photo" className="block text-sm font-medium leading-6 text-gray-900">
-                                Pievienot dokumentus
-                              </label>
-                              <div className="mt-2 flex justify-center rounded-lg border border-dashed border-gray-900/25 px-6 py-10">
-                                <div className="text-center">
-                                  <DocumentArrowDownIcon className="mx-auto h-12 w-12 text-gray-300" aria-hidden="true" />
-                                  <div className="mt-4 flex text-sm leading-6 text-gray-600">
-                                    <label
-                                      htmlFor="order_tech_doc"
-                                      className="relative cursor-pointer rounded-md bg-white font-semibold text-indigo-600 focus-within:outline-none focus-within:ring-2 focus-within:ring-indigo-600 focus-within:ring-offset-2 hover:text-indigo-500"
-                                    >
-                                      <span>Upload a file</span>
-                                      <input name="order_tech_doc" type="file" onChange={handleFileChange} className="sr-only" />
-                                    </label>
-                                    <p className="pl-1">or drag and drop</p>
-                                  </div>
-                                  <p className="text-xs leading-5 text-gray-600">PDF, WORD up to 10MB</p>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="border-b border-gray-900/10 pb-12">
-                          <h2 className="text-base font-semibold leading-7 text-gray-900">Papildus informācija par projektu</h2>
-                          <p className="mt-1 text-sm leading-6 text-gray-600">Use a permanent address where you can receive mail.</p>
-
-                          <div className="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
-                            <div className="sm:col-span-3">
-                              <label htmlFor="first-name" className="block text-sm font-medium leading-6 text-gray-900">
-                                First name
-                              </label>
-                              <div className="mt-2">
-                                <input
-                                  type="text"
-                                  name="first-name"
-                                  id="first-name"
-                                  autoComplete="given-name"
-                                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                                />
-                              </div>
-                            </div>
-
-                            <div className="sm:col-span-3">
-                              <label htmlFor="last-name" className="block text-sm font-medium leading-6 text-gray-900">
-                                Last name
-                              </label>
-                              <div className="mt-2">
-                                <input
-                                  type="text"
-                                  name="last-name"
-                                  id="last-name"
-                                  autoComplete="family-name"
-                                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                                />
-                              </div>
-                            </div>
-
-                            <div className="sm:col-span-4">
-                              <label htmlFor="email" className="block text-sm font-medium leading-6 text-gray-900">
-                                Email address
-                              </label>
-                              <div className="mt-2">
-                                <input
-                                  id="email"
-                                  name="email"
-                                  type="email"
-                                  autoComplete="email"
-                                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                                />
-                              </div>
-                            </div>
-
-                            <div className="sm:col-span-3">
-                              <label htmlFor="country" className="block text-sm font-medium leading-6 text-gray-900">
-                                Country
-                              </label>
-                              <div className="mt-2">
-                                <select
-                                  id="country"
-                                  name="country"
-                                  autoComplete="country-name"
-                                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:max-w-xs sm:text-sm sm:leading-6"
-                                >
-                                  <option>United States</option>
-                                  <option>Canada</option>
-                                  <option>Mexico</option>
-                                </select>
-                              </div>
-                            </div>
-
-                            <div className="col-span-full">
-                              <label htmlFor="street-address" className="block text-sm font-medium leading-6 text-gray-900">
-                                Street address
-                              </label>
-                              <div className="mt-2">
-                                <input
-                                  type="text"
-                                  name="street-address"
-                                  id="street-address"
-                                  autoComplete="street-address"
-                                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                                />
-                              </div>
-                            </div>
-
-                            <div className="sm:col-span-2 sm:col-start-1">
-                              <label htmlFor="city" className="block text-sm font-medium leading-6 text-gray-900">
-                                City
-                              </label>
-                              <div className="mt-2">
-                                <input
-                                  type="text"
-                                  name="city"
-                                  id="city"
-                                  autoComplete="address-level2"
-                                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                                />
-                              </div>
-                            </div>
-
-                            <div className="sm:col-span-2">
-                              <label htmlFor="region" className="block text-sm font-medium leading-6 text-gray-900">
-                                State / Province
-                              </label>
-                              <div className="mt-2">
-                                <input
-                                  type="text"
-                                  name="region"
-                                  id="region"
-                                  autoComplete="address-level1"
-                                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                                />
-                              </div>
-                            </div>
-
-                            <div className="sm:col-span-2">
-                              <label htmlFor="postal-code" className="block text-sm font-medium leading-6 text-gray-900">
-                                ZIP / Postal code
-                              </label>
-                              <div className="mt-2">
-                                <input
-                                  type="text"
-                                  name="postal-code"
-                                  id="postal-code"
-                                  autoComplete="postal-code"
-                                  className="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="border-b border-gray-900/10 pb-12">
-                          <h2 className="text-base font-semibold leading-7 text-gray-900">Notifications</h2>
-                          <p className="mt-1 text-sm leading-6 text-gray-600">
-                            We'll always let you know about important changes, but you pick what else you want to hear about.
-                          </p>
-
-                          <div className="mt-10 space-y-10">
-                            <fieldset>
-                              <legend className="text-sm font-semibold leading-6 text-gray-900">By Email</legend>
-                              <div className="mt-6 space-y-6">
-                                <div className="relative flex gap-x-3">
-                                  <div className="flex h-6 items-center">
-                                    <input
-                                      id="comments"
-                                      name="comments"
-                                      type="checkbox"
-                                      className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
-                                    />
-                                  </div>
-                                  <div className="text-sm leading-6">
-                                    <label htmlFor="comments" className="font-medium text-gray-900">
-                                      Comments
-                                    </label>
-                                    <p className="text-gray-500">Get notified when someones posts a comment on a posting.</p>
-                                  </div>
-                                </div>
-                                <div className="relative flex gap-x-3">
-                                  <div className="flex h-6 items-center">
-                                    <input
-                                      id="candidates"
-                                      name="candidates"
-                                      type="checkbox"
-                                      className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
-                                    />
-                                  </div>
-                                  <div className="text-sm leading-6">
-                                    <label htmlFor="candidates" className="font-medium text-gray-900">
-                                      Candidates
-                                    </label>
-                                    <p className="text-gray-500">Get notified when a candidate applies for a job.</p>
-                                  </div>
-                                </div>
-                                <div className="relative flex gap-x-3">
-                                  <div className="flex h-6 items-center">
-                                    <input
-                                      id="offers"
-                                      name="offers"
-                                      type="checkbox"
-                                      className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-600"
-                                    />
-                                  </div>
-                                  <div className="text-sm leading-6">
-                                    <label htmlFor="offers" className="font-medium text-gray-900">
-                                      Offers
-                                    </label>
-                                    <p className="text-gray-500">Get notified when a candidate accepts or rejects an offer.</p>
-                                  </div>
-                                </div>
-                              </div>
-                            </fieldset>
-                            <fieldset>
-                              <legend className="text-sm font-semibold leading-6 text-gray-900">Push Notifications</legend>
-                              <p className="mt-1 text-sm leading-6 text-gray-600">These are delivered via SMS to your mobile phone.</p>
-                              <div className="mt-6 space-y-6">
-                                <div className="flex items-center gap-x-3">
-                                  <input
-                                    id="push-everything"
-                                    name="push-notifications"
-                                    type="radio"
-                                    className="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600"
-                                  />
-                                  <label htmlFor="push-everything" className="block text-sm font-medium leading-6 text-gray-900">
-                                    Everything
-                                  </label>
-                                </div>
-                                <div className="flex items-center gap-x-3">
-                                  <input
-                                    id="push-email"
-                                    name="push-notifications"
-                                    type="radio"
-                                    className="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600"
-                                  />
-                                  <label htmlFor="push-email" className="block text-sm font-medium leading-6 text-gray-900">
-                                    Same as email
-                                  </label>
-                                </div>
-                                <div className="flex items-center gap-x-3">
-                                  <input
-                                    id="push-nothing"
-                                    name="push-notifications"
-                                    type="radio"
-                                    className="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600"
-                                  />
-                                  <label htmlFor="push-nothing" className="block text-sm font-medium leading-6 text-gray-900">
-                                    No push notifications
-                                  </label>
-                                </div>
-                              </div>
-                            </fieldset>
-                          </div>
-                        </div>
-                      </div>
-                      <TERipple rippleColor="light">
-                      <button
-                        type="button"
-                        className="inline-block rounded bg-primary-100 px-6 pb-2 pt-2.5 text-xs font-medium uppercase leading-normal text-primary-700 transition duration-150 ease-in-out hover:bg-primary-accent-100 focus:bg-primary-accent-100 focus:outline-none focus:ring-0 active:bg-primary-accent-200"
-                        onClick={() => setShowVerticalyCenteredModal(false)}
-                      >
-                        Atcelt
-                      </button>
-                    </TERipple>
-                    <TERipple rippleColor="light">
-                      <button
-                        type="submit"
-                        className="ml-1 inline-block rounded bg-primary px-6 pb-2 pt-2.5 text-xs font-medium uppercase leading-normal text-white shadow-[0_4px_9px_-4px_#3b71ca] transition duration-150 ease-in-out hover:bg-primary-600 hover:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] focus:bg-primary-600 focus:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] focus:outline-none focus:ring-0 active:bg-primary-700 active:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.3),0_4px_18px_0_rgba(59,113,202,0.2)] dark:shadow-[0_4px_9px_-4px_rgba(59,113,202,0.5)] dark:hover:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)] dark:focus:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)] dark:active:shadow-[0_8px_9px_-4px_rgba(59,113,202,0.2),0_4px_18px_0_rgba(59,113,202,0.1)]"
-                      >
-                        Saglabāt
-                      </button>
-                    </TERipple>
-                    </form>
-                  </TEModalBody>
-                </TEModalContent>
-              </TEModalDialog>
-            </TEModal>
-          )}
-
-          {orders.map((order, key) => (
+          {orders && orders.map((order, key) => (
             <div key={key} className="border-b border-[#eee] py-1 px-4 dark:border-strokedark">
               <TERipple rippleColor="light" className="flex">
                 <div className="flex flex-grow items-center justify-between px-4 py-4">
@@ -601,32 +200,12 @@ const TableOrders = () => {
                         />
                       </svg>
                     </button>
-                    <button className="hover:text-primary">
-                      <svg
-                        className="fill-current"
-                        width="18"
-                        height="18"
-                        viewBox="0 0 18 18"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M13.7535 2.47502H11.5879V1.9969C11.5879 1.15315 10.9129 0.478149 10.0691 0.478149H7.90352C7.05977 0.478149 6.38477 1.15315 6.38477 1.9969V2.47502H4.21914C3.40352 2.47502 2.72852 3.15002 2.72852 3.96565V4.8094C2.72852 5.42815 3.09414 5.9344 3.62852 6.1594L4.07852 15.4688C4.13477 16.6219 5.09102 17.5219 6.24414 17.5219H11.7004C12.8535 17.5219 13.8098 16.6219 13.866 15.4688L14.3441 6.13127C14.8785 5.90627 15.2441 5.3719 15.2441 4.78127V3.93752C15.2441 3.15002 14.5691 2.47502 13.7535 2.47502ZM7.67852 1.9969C7.67852 1.85627 7.79102 1.74377 7.93164 1.74377H10.0973C10.2379 1.74377 10.3504 1.85627 10.3504 1.9969V2.47502H7.70664V1.9969H7.67852ZM4.02227 3.96565C4.02227 3.85315 4.10664 3.74065 4.24727 3.74065H13.7535C13.866 3.74065 13.9785 3.82502 13.9785 3.96565V4.8094C13.9785 4.9219 13.8941 5.0344 13.7535 5.0344H4.24727C4.13477 5.0344 4.02227 4.95002 4.02227 4.8094V3.96565ZM11.7285 16.2563H6.27227C5.79414 16.2563 5.40039 15.8906 5.37227 15.3844L4.95039 6.2719H13.0785L12.6566 15.3844C12.6004 15.8625 12.2066 16.2563 11.7285 16.2563Z"
-                          fill=""
-                        />
-                        <path
-                          d="M9.00039 9.11255C8.66289 9.11255 8.35352 9.3938 8.35352 9.75942V13.3313C8.35352 13.6688 8.63477 13.9782 9.00039 13.9782C9.33789 13.9782 9.64727 13.6969 9.64727 13.3313V9.75942C9.64727 9.3938 9.33789 9.11255 9.00039 9.11255Z"
-                          fill=""
-                        />
-                        <path
-                          d="M11.2502 9.67504C10.8846 9.64692 10.6033 9.90004 10.5752 10.2657L10.4064 12.7407C10.3783 13.0782 10.6314 13.3875 10.9971 13.4157C11.0252 13.4157 11.0252 13.4157 11.0533 13.4157C11.3908 13.4157 11.6721 13.1625 11.6721 12.825L11.8408 10.35C11.8408 9.98442 11.5877 9.70317 11.2502 9.67504Z"
-                          fill=""
-                        />
-                        <path
-                          d="M6.72245 9.67504C6.38495 9.70317 6.1037 10.0125 6.13182 10.35L6.3287 12.825C6.35683 13.1625 6.63808 13.4157 6.94745 13.4157C6.97558 13.4157 6.97558 13.4157 7.0037 13.4157C7.3412 13.3875 7.62245 13.0782 7.59433 12.7407L7.39745 10.2657C7.39745 9.90004 7.08808 9.64692 6.72245 9.67504Z"
-                          fill=""
-                        />
-                      </svg>
+                    <button className="hover:text-primary" 
+                      onClick={() => {
+                        setOrderId(order._id);
+                        setDialogOpen(true);
+                      }}>
+                      <img className='w-4 h-4' src={DeleteIcon} alt="Delete-Order" />
                     </button>
                     <button className="hover:text-primary">
                       <svg
@@ -740,10 +319,10 @@ const TableOrders = () => {
                           <path fillRule="evenodd" d="M12 2.25a.75.75 0 0 1 .75.75v11.69l3.22-3.22a.75.75 0 1 1 1.06 1.06l-4.5 4.5a.75.75 0 0 1-1.06 0l-4.5-4.5a.75.75 0 1 1 1.06-1.06l3.22 3.22V3a.75.75 0 0 1 .75-.75Zm-9 13.5a.75.75 0 0 1 .75.75v2.25a1.5 1.5 0 0 0 1.5 1.5h13.5a1.5 1.5 0 0 0 1.5-1.5V16.5a.75.75 0 0 1 1.5 0v2.25a3 3 0 0 1-3 3H5.25a3 3 0 0 1-3-3V16.5a.75.75 0 0 1 .75-.75Z" clipRule="evenodd" />
                         </svg>
                         <span className="flex flex-grow justify-between">
-                        {order.components.order_tech_doc[0].filename}
+                        {/* {order.components.order_tech_doc[].filename} */}
                         </span>
                         <a
-                          onClick={() => fileDownload(order.components.order_tech_doc[0].filename.toString(), order._id)}
+                          // onClick={() => fileDownload(order.components.order_tech_doc[0].filename.toString(), order._id)}
                             href="#!"
                             className="text-primary transition duration-150 ease-in-out hover:text-primary-600 focus:text-primary-600 active:text-primary-700 dark:text-primary-400 dark:hover:text-primary-500 dark:focus:text-primary-500 dark:active:text-primary-600"
                         >Download</a>

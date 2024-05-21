@@ -21,7 +21,7 @@ const userSchema = new Schema({
             message: 'Invalid email format',
         },
         require: true,
-        select: false,
+        select: true,
         unique: true,
     },
     password: {

@@ -16,6 +16,10 @@ router.post('/logout', userController.logout);
 
 router.put('/userUpdate', userController.handleFileUpload, userController.updateUser);
 
+router.put('/:id', userController.handleFileUpload, userController.updateUserByAdmin);
+
 router.delete('/delete', userController.deleteFile);
+
+router.delete('/deleteUser', userController.deleteUser);
 
 export default router;
